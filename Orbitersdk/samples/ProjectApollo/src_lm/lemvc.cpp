@@ -2379,7 +2379,7 @@ void LEM::DefineVCAnimations()
 	FloodRotary.SetReference(P3_ROT_POS[4], P3_ROT_AXIS);
 	FloodRotary.DefineMeshGroup(VC_GRP_Rot_P3_05);
 
-	NEEDLE_POS = { 0,0.179865,1.699588 };
+	NEEDLE_POS = {0,0.179865,1.699588};
 
 	MainPanelVC.AddSwitch(&TempMonitorInd);
 	//TempMonitorInd.SetDirection(_V(0.00, 0.0625 * cos(P3_TILT), 0.0625 * sin(P3_TILT)));

@@ -4134,14 +4134,13 @@ protected:
 
 	void VCFreeCam(VECTOR3 dir, bool slow);
 
-
 	//
 	// Integral Lights
 	//
 
 	void SetIntegralLight(int m, double state);
 	void SetFloodLight(int m, double state);
-
+	void SetNumericsLight(int m, double state);
 
 	//
 	// Systems functions.

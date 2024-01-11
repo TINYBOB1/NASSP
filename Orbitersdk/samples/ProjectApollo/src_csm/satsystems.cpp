@@ -424,7 +424,7 @@ void Saturn::SystemsInit() {
 	eca.Init(this);
 	tvsa.Init(this);
 	ems.Init(this, &EMSMnACircuitBraker, &EMSMnBCircuitBraker, &NumericRotarySwitch, &LightingNumIntLMDCCB);
-	ordeal.Init(&ORDEALEarthSwitch, &OrdealAc2CircuitBraker, &OrdealMnBCircuitBraker, &ORDEALAltSetRotary, &ORDEALModeSwitch, &ORDEALSlewSwitch, &ORDEALFDAI1Switch, &ORDEALFDAI2Switch);
+	ordeal.Init(&ORDEALEarthSwitch, &OrdealAc2CircuitBraker, &OrdealMnBCircuitBraker, &ORDEALAltSetRotary, &ORDEALModeSwitch, &ORDEALSlewSwitch, &ORDEALFDAI1Switch, &ORDEALFDAI2Switch, &ORDEALLightingSwitch);
 	mechanicalAccelerometer.Init(this);
 
 	qball.Init(this);
@@ -3824,7 +3824,7 @@ void Saturn::SetRCSState(int Quad, int Thruster, bool Active)
 		Level += 0.0105 / oapiGetSimStep();
 		Level = min(1.0, Level);
 
-		sprintf(oapiDebugString(), "Thruster %d Level %lf", Thruster, Level);
+		//sprintf(oapiDebugString(), "Thruster %d Level %lf", Thruster, Level);
 	}
 	else
 	{

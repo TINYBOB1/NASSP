@@ -1,6 +1,6 @@
 // ========================================================
 // Mesh resource file for CM-VC-SeatsFolded.msh
-// Generated with meshc (Jordan version)
+// Generated with meshc (Jordan version) on 01-02-2024
 // ========================================================
 
 // Number of mesh groups:

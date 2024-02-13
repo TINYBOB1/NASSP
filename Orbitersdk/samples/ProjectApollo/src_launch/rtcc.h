@@ -4312,6 +4312,7 @@ public:
 		VECTOR3 DV = _V(0, 0, 0);
 		double GET_TIG = 0.0;
 		int Rev = 0;
+		bool ShowImpact = false; //false = HP location, true = impact location
 		int Err = 0;
 	} PZGPMDIS;
 

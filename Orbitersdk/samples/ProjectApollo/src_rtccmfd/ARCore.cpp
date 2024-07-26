@@ -567,6 +567,11 @@ bool AR_GCore::AGOP_LM_REFSMMAT_Required()
 	return GetLMREFSMMAT;
 }
 
+void AR_GCore::DFLBackgroundSlide(oapi::Sketchpad *skp, DWORD W, DWORD H, unsigned display)
+{
+	BackgroundSlides.Print(skp, W, H, display);
+}
+
 ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 {
 	GC = gcin;
@@ -3403,7 +3408,8 @@ int ARCore::subThread()
 	break;
 	case 10: //Lunar Descent Planning Processor
 	{
-		SV sv;
+		EphemerisData sv;
+		double W_LM;
 
 		if (GC->MissionPlanningActive)
 		{
@@ -3424,11 +3430,7 @@ int ARCore::subThread()
 				Result = DONE;
 				break;
 			}
-
-			sv.R = EPHEM.R;
-			sv.V = EPHEM.V;
-			sv.MJD = OrbMech::MJDfromGET(EPHEM.GMT, GC->rtcc->GetGMTBase());
-			sv.gravref = GC->rtcc->GetGravref(EPHEM.RBI);
+			W_LM = 0.0; //TBD
 		}
 		else
 		{
@@ -3449,16 +3451,18 @@ int ARCore::subThread()
 				break;
 			}
 
-			sv = GC->rtcc->StateVectorCalc(v);
-		}
-
-		if (!GC->rtcc->LunarDescentPlanningProcessor(sv))
-		{
-			if (GC->rtcc->med_k16.Mode != 7)
+			sv = GC->rtcc->StateVectorCalcEphem(v);
+			if (GC->rtcc->pLM)
 			{
-				GC->rtcc->CZTDTGTU.GETTD = GC->rtcc->PZLDPDIS.PD_GETTD;
+				W_LM = GC->rtcc->pLM->GetMass();
+			}
+			else
+			{
+				W_LM = 0.0;
 			}
 		}
+
+		GC->rtcc->LunarDescentPlanningProcessor(sv, W_LM);
 
 		Result = DONE;
 	}
@@ -5580,6 +5584,42 @@ int ARCore::subThread()
 		}
 
 		Result = DONE;
+	}
+	break;
+	case 58: //Coelliptic ARM display
+	{
+		GC->rtcc->PZMARM.t_Calc_ARM = GC->rtcc->RTCCPresentTimeGMT();
+
+		if (GC->rtcc->pCSM == NULL || GC->rtcc->pLM == NULL)
+		{
+			Result = DONE;
+			break;
+		}
+
+		EphemerisData sv_CSM, sv_LM;
+
+		sv_CSM = GC->rtcc->StateVectorCalcEphem(GC->rtcc->pCSM);
+		sv_LM = GC->rtcc->StateVectorCalcEphem(GC->rtcc->pLM);
+
+		GC->rtcc->PMDARM(sv_CSM, sv_LM);
+	}
+	break;
+	case 59: //Short ARM display
+	{
+		GC->rtcc->PZMARM.t_Calc_ShortARM = GC->rtcc->RTCCPresentTimeGMT();
+
+		if (GC->rtcc->pCSM == NULL || GC->rtcc->pLM == NULL)
+		{
+			Result = DONE;
+			break;
+		}
+
+		EphemerisData sv_CSM, sv_LM;
+
+		sv_CSM = GC->rtcc->StateVectorCalcEphem(GC->rtcc->pCSM);
+		sv_LM = GC->rtcc->StateVectorCalcEphem(GC->rtcc->pLM);
+
+		GC->rtcc->PMDSARM(sv_CSM, sv_LM);
 	}
 	break;
 	}

@@ -41,6 +41,8 @@ See http://nassp.sourceforge.net/license/ for more details.
 #include "../src_rtccmfd/GeneralizedIterator.h"
 #include "../src_rtccmfd/EnckeIntegrator.h"
 #include "../src_rtccmfd/ReentryNumericalIntegrator.h"
+#include "../src_rtccmfd/AscentRendezvousMonitor.h"
+#include "../src_rtccmfd/RTCCUtilities.h"
 #include "mcc.h"
 #include "rtcc.h"
 #include "nassputils.h"
@@ -1193,6 +1195,7 @@ LunarDescentPlanningTable::LunarDescentPlanningTable()
 	sprintf(DescAzMode, "");
 	DescAsc = 0.0;
 	SN_LK_A = 0.0;
+	error = 0;
 }
 
 MissionPlanTable::MissionPlanTable()
@@ -1464,6 +1467,86 @@ void SpacecraftSettingTable::LoadState(FILEHANDLE scn, char *end_str)
 		papiReadScenario_bool(line, "IsRTE", IsRTE);
 		papiReadScenario_double(line, "lat_T", lat_T);
 		papiReadScenario_double(line, "lng_T", lng_T);
+	}
+}
+
+RTCC::ARMMEDSaveTable::ARMMEDSaveTable()
+{
+	E = 26.6*RAD;
+	CSIFlag = 50.0;
+	CDHIndicator = -1;
+	h_min = 5.0*1852.0;
+
+	ITWEAK = false;
+	ITPI = true;
+	t_tweak = 0.0;
+	DT = 3.0*60.0;
+	DTPI = 40.0*60.0;
+	DTHETA = 1.69*RAD;
+	IMUAngles = _V(0.0, 258.0*RAD, 0.0);
+	IREF = false;
+	Axhor = 10.0*RAD;
+
+	WT = 130.0*RAD;
+	DH = 15.0*1852.0;
+	t_Ins = 0.0;
+	t_TPI_Coell = 0.0;
+	t_TPI_Short = 0.0;
+}
+
+void RTCC::ARMMEDSaveTable::SaveState(FILEHANDLE scn, char *start_str, char *end_str)
+{
+	oapiWriteLine(scn, start_str);
+
+	papiWriteScenario_double(scn, "ELEV", E);
+	papiWriteScenario_double(scn, "CSIFlag", CSIFlag);
+	oapiWriteScenario_int(scn, "CDHIndicator", CDHIndicator);
+	papiWriteScenario_double(scn, "h_min", h_min);
+	papiWriteScenario_double(scn, "WT", WT);
+	papiWriteScenario_double(scn, "DH", DH);
+	papiWriteScenario_double(scn, "t_Ins", t_Ins);
+	papiWriteScenario_double(scn, "t_TPI_Coell", t_TPI_Coell);
+	papiWriteScenario_bool(scn, "ITWEAK", ITWEAK);
+	papiWriteScenario_bool(scn, "ITPI", ITPI);
+	papiWriteScenario_double(scn, "t_tweak", t_tweak);
+	papiWriteScenario_double(scn, "DT", DT);
+	papiWriteScenario_double(scn, "DTPI", DTPI);
+	papiWriteScenario_double(scn, "DTHETA", DTHETA);
+	papiWriteScenario_vec(scn, "IMUAngles", IMUAngles);
+	papiWriteScenario_bool(scn, "IREF", IREF);
+	papiWriteScenario_double(scn, "Axhor", Axhor);
+	papiWriteScenario_double(scn, "t_TPI_Short", t_TPI_Short);
+
+	oapiWriteLine(scn, end_str);
+}
+
+void RTCC::ARMMEDSaveTable::LoadState(FILEHANDLE scn, char *end_str)
+{
+	char *line;
+
+	while (oapiReadScenario_nextline(scn, line)) {
+		if (!strnicmp(line, end_str, sizeof(end_str))) {
+			break;
+		}
+
+		papiReadScenario_double(line, "ELEV", E);
+		papiReadScenario_double(line, "CSIFlag", CSIFlag);
+		papiReadScenario_int(line, "CDHIndicator", CDHIndicator);
+		papiReadScenario_double(line, "h_min", h_min);
+		papiReadScenario_double(line, "WT", WT);
+		papiReadScenario_double(line, "DH", DH);
+		papiReadScenario_double(line, "t_Ins", t_Ins);
+		papiReadScenario_double(line, "t_TPI_Coell", t_TPI_Coell);
+		papiReadScenario_bool(line, "ITWEAK", ITWEAK);
+		papiReadScenario_bool(line, "ITPI", ITPI);
+		papiReadScenario_double(line, "t_tweak", t_tweak);
+		papiReadScenario_double(line, "DT", DT);
+		papiReadScenario_double(line, "DTPI", DTPI);
+		papiReadScenario_double(line, "DTHETA", DTHETA);
+		papiReadScenario_vec(line, "IMUAngles", IMUAngles);
+		papiReadScenario_bool(line, "IREF", IREF);
+		papiReadScenario_double(line, "Axhor", Axhor);
+		papiReadScenario_double(line, "t_TPI_Short", t_TPI_Short);
 	}
 }
 
@@ -2252,6 +2335,10 @@ void RTCC::LoadMissionInitParameters(int year, int month, int day)
 			else if (papiReadScenario_double(Buff, "LDPPDescentFlightArc", dtemp))
 			{
 				GZGENCSN.LDPPDescentFlightArc = dtemp * RAD;
+			}
+			else if (papiReadScenario_double(Buff, "LDPPLandingSiteOffset", dtemp))
+			{
+				GZGENCSN.LDPPLandingSiteOffset = dtemp * RAD;
 			}
 			else if (papiReadScenario_double(Buff, "LDPPHeightofPDI", dtemp))
 			{
@@ -5761,69 +5848,71 @@ double RTCC::TPISearch(SV sv_A, SV sv_P, double elev)
 	return OrbMech::GETfromMJD(sv_A.MJD + dt / 24.0 / 3600.0, CalcGETBase());
 }
 
-int RTCC::LunarDescentPlanningProcessor(SV sv)
+int RTCC::LunarDescentPlanningProcessor(EphemerisData sv, double W_LM)
 {
 	LDPPOptions opt;
 
+	PZLDPDIS.error = 0;
+
 	opt.azi_nom = GZGENCSN.LDPPAzimuth;
-	opt.GETbase = CalcGETBase();
 	opt.H_DP = GZGENCSN.LDPPHeightofPDI;
 	opt.H_W = med_k16.DesiredHeight;
 	opt.IDO = med_k16.Sequence - 2;
 	if (GZGENCSN.LDPPAzimuth != 0.0)
 	{
-		opt.I_AZ = 1;
+		opt.I_AZ = true;
 	}
 	else
 	{
-		opt.I_AZ = 0;
+		opt.I_AZ = false;
 	}
-	if (GZGENCSN.LDPPPoweredDescentSimFlag)
+	opt.I_SP = SystemParameters.MCTDT1 / SystemParameters.MCTDW1;
+
+	opt.I_PD = GZGENCSN.LDPPPoweredDescentSimFlag;
+	if (GZGENCSN.LDPPTimeofPDI != 0.0)
 	{
-		opt.I_PD = 1;
+		opt.I_TPD = true;
 	}
 	else
 	{
-		opt.I_PD = 0;
+		opt.I_TPD = false;
 	}
-	opt.I_SP = 0.0;
-	opt.I_TPD = 0;
+	
 	opt.Lat_LS = BZLAND.lat[RTCC_LMPOS_BEST];
 	opt.Lng_LS = BZLAND.lng[RTCC_LMPOS_BEST];
 	opt.M = GZGENCSN.LDPPDwellOrbits;
 	opt.MODE = med_k16.Mode;
 	opt.R_LS = BZLAND.rad[RTCC_LMPOS_BEST];
 	opt.sv0 = sv;
-	opt.TH[0] = med_k16.GETTH1;
-	opt.TH[1] = med_k16.GETTH2;
-	opt.TH[2] = med_k16.GETTH3;
-	opt.TH[3] = med_k16.GETTH4;
+	opt.TH[0] = GMTfromGET(med_k16.GETTH1);
+	opt.TH[1] = GMTfromGET(med_k16.GETTH2);
+	opt.TH[2] = GMTfromGET(med_k16.GETTH3);
+	opt.TH[3] = GMTfromGET(med_k16.GETTH4);
 	opt.theta_D = GZGENCSN.LDPPDescentFlightArc;
+	opt.theta_PDI = GZGENCSN.LDPPLandingSiteOffset;
 	opt.t_D = GZGENCSN.LDPPDescentFlightTime;
-	opt.T_PD = GZGENCSN.LDPPTimeofPDI;
-	opt.W_LM = 0.0;
-
-	//Mode 6 doesn't work yet
-	if (opt.MODE == 6) return 1;
+	opt.T_PD = GMTfromGET(GZGENCSN.LDPPTimeofPDI);
+	opt.W_LM = W_LM;
 
 	LDPP ldpp(this);
 	LDPPResults res;
-	ldpp.Init(opt);
-	int error = ldpp.LDPPMain(res);
+	ldpp.LDPPMain(opt, res);
 
-	if (error) return error;
+	if (res.Error)
+	{
+		PZLDPDIS.error = res.Error;
+		//TBD: Online print
+		return res.Error;
+	}
 
 	//Store in PZLDPELM
 	for (int i = 0;i < 4;i++)
 	{
-		PZLDPELM.sv_man_bef[i].R = res.sv_before[i].R;
-		PZLDPELM.sv_man_bef[i].V = res.sv_before[i].V;
-		PZLDPELM.sv_man_bef[i].GMT = OrbMech::GETfromMJD(res.sv_before[i].MJD, SystemParameters.GMTBASE);
-		PZLDPELM.sv_man_bef[i].RBI = BODY_MOON;	
+		PZLDPELM.sv_man_bef[i] = res.sv_before[i];
 		PZLDPELM.V_man_after[i] = res.V_after[i];
 		PZLDPELM.plan[i] = med_k16.Vehicle;
 	}
-	PZLDPELM.num_man = res.i;
+	PZLDPELM.num_man = res.I_Num;
 
 	PMDLDPP(opt, res, PZLDPDIS);
 
@@ -5833,6 +5922,189 @@ int RTCC::LunarDescentPlanningProcessor(SV sv)
 	PZLDPELM.code[3] = PZLDPDIS.MVR[3];
 
 	return 0;
+}
+
+void RTCC::PMDLDPP(const LDPPOptions &opt, const LDPPResults &res, LunarDescentPlanningTable &table)
+{
+	double lat, lng;
+
+	table = LunarDescentPlanningTable();
+
+	for (int i = 0; i < 4; i++)
+	{
+		table.DV[i] = length(res.DeltaV_LVLH[i]) / 0.3048;
+		table.DVVector[i] = res.DeltaV_LVLH[i] / 0.3048;
+		if (res.T_M[i] != 0.0)
+		{
+			table.GETIG[i] = GETfromGMT(res.T_M[i]);
+		}
+		else
+		{
+			table.GETIG[i] = 0.0;
+		}
+		if (opt.MODE != 6 && opt.TH[i] != 0.0)
+		{
+			table.GETTH[i] = GETfromGMT(opt.TH[i]);
+		}
+		else
+		{
+			table.GETTH[i] = 0.0;
+		}
+		table.MVR[i] = "";
+		table.AC[i] = 0.0;
+		table.HPC[i] = 0.0;
+		table.LIG[i] = 0.0;
+	}
+
+	table.LAT_LLS = opt.Lat_LS*DEG;
+	table.LONG_LLS = opt.Lng_LS*DEG;
+	table.MODE = opt.MODE;
+	table.LMWT = opt.W_LM / LBS2KG;
+
+	table.GMTV = opt.sv0.GMT;
+	table.GETV = GETfromGMT(table.GMTV);
+
+	if (opt.MODE == 1)
+	{
+		if (opt.IDO == -1)
+		{
+			table.MVR[0] = "PC";
+			table.MVR[1] = "DOI";
+		}
+		else if (opt.IDO == 0)
+		{
+			table.MVR[0] = "PCC";
+			table.MVR[1] = "DOI";
+		}
+		else if (opt.IDO == 1)
+		{
+			table.MVR[0] = "ASP";
+			table.MVR[1] = "CIA";
+			table.MVR[2] = "DOI";
+		}
+		else if (opt.IDO == 2)
+		{
+			table.MVR[0] = "PCCH";
+			table.MVR[1] = "DOI";
+		}
+		else
+		{
+			table.MVR[0] = "PCCT";
+			table.MVR[1] = "DOI";
+		}
+	}
+	else if (opt.MODE == 2)
+	{
+		if (opt.IDO == 0)
+		{
+			table.MVR[0] = "ASH";
+			table.MVR[1] = "DOI";
+		}
+		else
+		{
+			table.MVR[0] = "CIR";
+			table.MVR[1] = "DOI";
+		}
+	}
+	else if (opt.MODE == 3)
+	{
+		table.MVR[0] = "ASH";
+		table.MVR[1] = "CIA";
+		table.MVR[2] = "DOI";
+	}
+	else if (opt.MODE == 4)
+	{
+		table.MVR[0] = "DOI";
+	}
+	else if (opt.MODE == 5)
+	{
+		if (opt.IDO == -1)
+		{
+			table.MVR[0] = "PC";
+			table.MVR[1] = "HO1";
+			table.MVR[2] = "HO2";
+		}
+		else if (opt.IDO == 0)
+		{
+			table.MVR[0] = "HO1";
+			table.MVR[1] = "PC";
+			table.MVR[2] = "HO2";
+		}
+		else
+		{
+			table.MVR[0] = "HO1";
+			table.MVR[1] = "HO2";
+			table.MVR[2] = "PC";
+		}
+		table.MVR[3] = "DOI";
+	}
+	else if (opt.MODE == 7)
+	{
+		table.MVR[0] = "PPC";
+	}
+
+	EphemerisData sv_ig;
+	double r_apo, r_peri;
+
+	sv_ig = opt.sv0;
+
+	for (int i = 0; i < res.I_Num; i++)
+	{
+		//State vector at TIG
+		sv_ig = coast(sv_ig, res.T_M[i] - sv_ig.GMT);
+		OrbMech::latlong_from_BRCS(SystemParameters.MAT_J2000_BRCS, sv_ig.R, OrbMech::MJDfromGET(sv_ig.GMT, GetGMTBase()), hMoon, lat, lng);
+		table.LIG[i] = lng * DEG;
+		sv_ig.V += tmul(OrbMech::LVLH_Matrix(sv_ig.R, sv_ig.V), res.DeltaV_LVLH[i]);
+
+		OrbMech::periapo(sv_ig.R, sv_ig.V, OrbMech::mu_Moon, r_apo, r_peri); //TBD
+
+		table.AC[i] = (r_apo - opt.R_LS) / 1852.0;
+		table.HPC[i] = (r_peri - opt.R_LS) / 1852.0;
+	}
+
+	if (res.t_PDI_TH != 0.0) table.PD_GETTH = GETfromGMT(res.t_PDI_TH);
+	else table.PD_GETTH = 0.0;
+
+	if (res.t_PDI != 0.0) table.PD_GETIG = GETfromGMT(res.t_PDI);
+	else table.PD_GETIG = 0.0;
+
+	if (res.t_Land != 0.0)
+	{
+		table.PD_GETTD = GETfromGMT(res.t_Land);
+
+		//Calculate sun elevation angle
+		VECTOR3 R_EM, V_EM, R_ES, R_LS_SG, R_LS_SC, R_MS, N, rho;
+		double sinang;
+
+		//Get sun and moon ephemerides
+		PLEFEM(1, res.t_Land / 3600.0, 0, &R_EM, &V_EM, &R_ES, NULL);
+		//Selenographic landing site vector
+		R_LS_SG = OrbMech::r_from_latlong(BZLAND.lat[0], BZLAND.lng[0], BZLAND.rad[0]);
+		//Selenocentric landing site vector
+		ELVCNV(R_LS_SG, res.t_Land, 1, RTCC_COORDINATES_MCT, RTCC_COORDINATES_MCI, R_LS_SC);
+		//Vector from moon to sun
+		R_MS = R_ES - R_EM;
+		//Elevation angle
+		OrbMech::EMXINGElev(R_MS, R_LS_SC, N, rho, sinang);
+		//Finally
+		table.SN_LK_A = asin(sinang)*DEG;
+	}
+	else
+	{
+		table.PD_GETTD = 0.0;
+		table.SN_LK_A = 0.0;
+	}
+
+	if (opt.I_AZ == false)
+	{
+		sprintf(table.DescAzMode, "OPT");
+	}
+	else
+	{
+		sprintf(table.DescAzMode, "DES");
+	}
+	table.DescAsc = res.azi*DEG;
+	table.PD_ThetaIgn = opt.theta_D*DEG;
 }
 
 void RTCC::TranslunarInjectionProcessor(EphemerisData sv, PLAWDTOutput WeightsTable)
@@ -7077,6 +7349,7 @@ void RTCC::SaveState(FILEHANDLE scn) {
 	SAVE_INT("RTCC_GZGENCSN_LDPPDwellOrbits", GZGENCSN.LDPPDwellOrbits);
 	SAVE_BOOL("RTCC_GZGENCSN_LDPPPoweredDescentSimFlag", GZGENCSN.LDPPPoweredDescentSimFlag);
 	SAVE_DOUBLE("RTCC_GZGENCSN_LDPPDescentFlightArc", GZGENCSN.LDPPDescentFlightArc);
+	SAVE_DOUBLE("RTCC_GZGENCSN_LDPPLandingSiteOffset", GZGENCSN.LDPPLandingSiteOffset);
 	if (EZETVMED.SpaceDigVehID != -1)
 	{
 		SAVE_INT("EZETVMED_SpaceDigVehID", EZETVMED.SpaceDigVehID);
@@ -7259,6 +7532,7 @@ void RTCC::SaveState(FILEHANDLE scn) {
 	PZMPTCSM.SaveState(scn, "MPTCSM_BEGIN", "MPTCSM_END");
 	PZMPTLEM.SaveState(scn, "MPTLEM_BEGIN", "MPTLEM_END");
 	RZDBSC1.SaveState(scn, "RZDBSC1_BEGIN", "RZDBSC1_END");
+	PZMARM.SaveState(scn, "PZMARM_BEGIN", "PZMARM_END");
 
 	if (pCSM)
 	{
@@ -7379,6 +7653,7 @@ void RTCC::LoadState(FILEHANDLE scn) {
 		LOAD_INT("RTCC_GZGENCSN_LDPPDwellOrbits", GZGENCSN.LDPPDwellOrbits);
 		LOAD_BOOL("RTCC_GZGENCSN_LDPPPoweredDescentSimFlag", GZGENCSN.LDPPPoweredDescentSimFlag);
 		LOAD_DOUBLE("RTCC_GZGENCSN_LDPPDescentFlightArc", GZGENCSN.LDPPDescentFlightArc);
+		LOAD_DOUBLE("RTCC_GZGENCSN_LDPPLandingSiteOffset", GZGENCSN.LDPPLandingSiteOffset);
 
 		LOAD_INT("EZETVMED_SpaceDigVehID", EZETVMED.SpaceDigVehID);
 		LOAD_INT("EZETVMED_SpaceDigCentralBody", EZETVMED.SpaceDigCentralBody);
@@ -7518,6 +7793,9 @@ void RTCC::LoadState(FILEHANDLE scn) {
 		}
 		else if (!strnicmp(line, "RZDBSC1_BEGIN", sizeof("RZDBSC1_BEGIN"))) {
 			RZDBSC1.LoadState(scn, "RZDBSC1_END");
+		}
+		else if (!strnicmp(line, "PZMARM_BEGIN", sizeof("PZMARM_BEGIN"))) {
+			PZMARM.LoadState(scn, "PZMARM_END");
 		}
 		papiReadScenario_string(line, "RTCCMFD_CSM", CSMName);
 		papiReadScenario_string(line, "RTCCMFD_LM", LEMName);
@@ -11873,7 +12151,7 @@ RTCC_PMMSPQ_A:
 	if (opt.K_CDH == 0)
 	{
 		sv_C_TPI = coast(sv_C_CDH_apo, t_TPI - t_CDH);
-		OrbMech::QDRTPI(SystemParameters.AGCEpoch, sv_T_TPI.R, sv_T_TPI.V, sv_T_TPI.MJD, sv_T_TPI.gravref, mu, DH, opt.E, 1, R_TJ, V_TJ);
+		OrbMech::QDRTPI(SystemParameters.AGCEpoch, sv_T_TPI.R, sv_T_TPI.V, sv_T_TPI.MJD, sv_T_TPI.gravref == hEarth ? BODY_EARTH : BODY_MOON, mu, DH, opt.E, 1, R_TJ, V_TJ);
 		R_AFD = R_TJ - unit(R_TJ)*DH;
 		R_AF = OrbMech::PROJCT(R_TJ, V_TJ, sv_C_TPI.R);
 
@@ -22350,7 +22628,7 @@ int RTCC::PMMXFR(int id, void *data)
 			if (inp->Plan < 0)
 			{
 				GMTI = PZLDPELM.sv_man_bef[0].GMT;
-				purpose = PZLDPELM.code[0];
+				purpose = PZLDPELM.code[0].substr(0, 2);
 				plan = PZLDPELM.plan[0];
 			}
 			else
@@ -23634,133 +23912,6 @@ void RTCC::PMDDMT(int MPT_ID, unsigned ManNo, int REFSMMAT_ID, bool HeadsUp, Det
 			break;
 		}
 	}
-}
-
-void RTCC::PMDLDPP(const LDPPOptions &opt, const LDPPResults &res, LunarDescentPlanningTable &table)
-{
-	double lat, lng, GMTbase;
-
-	for (int i = 0;i < 4;i++)
-	{
-		table.DV[i] = length(res.DeltaV_LVLH[i]) / 0.3048;
-		table.DVVector[i] = res.DeltaV_LVLH[i] / 0.3048;
-		table.GETIG[i] = res.T_M[i];
-		table.GETTH[i] = opt.TH[i];
-		table.MVR[i] = "";
-		table.AC[i] = 0.0;
-		table.HPC[i] = 0.0;
-		table.LIG[i] = 0.0;
-	}
-
-	table.LAT_LLS = opt.Lat_LS*DEG;
-	table.LONG_LLS = opt.Lng_LS*DEG;
-	table.MODE = opt.MODE;
-
-	GMTbase = floor(opt.GETbase);
-	table.GMTV = OrbMech::GETfromMJD(opt.sv0.MJD, GMTbase);
-	table.GETV = OrbMech::GETfromMJD(opt.sv0.MJD, opt.GETbase);
-
-	if (opt.MODE == 1)
-	{
-		if (opt.IDO == -1)
-		{
-			table.MVR[0] = "PC";
-			table.MVR[1] = "DI";
-		}
-		else if (opt.IDO == 1)
-		{
-			table.MVR[0] = "AS";
-			table.MVR[1] = "CI";
-			table.MVR[2] = "DI";
-		}
-		else
-		{
-			table.MVR[0] = "PC";
-			table.MVR[1] = "DI";
-		}
-	}
-	if (opt.MODE == 2)
-	{
-		if (opt.IDO == 0)
-		{
-			table.MVR[0] = "AS";
-			table.MVR[1] = "DI";
-		}
-		else
-		{
-			table.MVR[0] = "CI";
-			table.MVR[1] = "DI";
-		}
-	}
-	else if (opt.MODE == 3)
-	{
-		table.MVR[0] = "AS";
-		table.MVR[1] = "CI";
-		table.MVR[2] = "DI";
-	}
-	else if (opt.MODE == 4)
-	{
-		table.MVR[0] = "DI";
-	}
-	else if (opt.MODE == 5)
-	{
-		if (opt.IDO == -1)
-		{
-			table.MVR[0] = "PC";
-			table.MVR[1] = "H1";
-			table.MVR[2] = "H2";
-		}
-		else if (opt.IDO == 0)
-		{
-			table.MVR[0] = "H1";
-			table.MVR[1] = "PC";
-			table.MVR[2] = "H2";
-		}
-		else
-		{
-			table.MVR[0] = "H1";
-			table.MVR[1] = "H2";
-			table.MVR[2] = "PC";
-		}
-		table.MVR[3] = "DI";
-	}
-	else if (opt.MODE == 7)
-	{
-		table.MVR[0] = "PC";
-	}
-
-	SV sv_ig;
-	double r_apo, r_peri;
-
-	sv_ig = opt.sv0;
-
-	for (int i = 0;i < res.i;i++)
-	{
-		sv_ig = coast(sv_ig, res.T_M[i] - OrbMech::GETfromMJD(sv_ig.MJD, opt.GETbase));
-		OrbMech::latlong_from_BRCS(SystemParameters.MAT_J2000_BRCS, sv_ig.R, sv_ig.MJD, sv_ig.gravref, lat, lng);
-		table.LIG[i] = lng * DEG;
-		sv_ig.V += tmul(OrbMech::LVLH_Matrix(sv_ig.R, sv_ig.V), res.DeltaV_LVLH[i]);
-
-		OrbMech::periapo(sv_ig.R, sv_ig.V, OrbMech::mu_Moon, r_apo, r_peri); //TBD
-
-		table.AC[i] = (r_apo - opt.R_LS) / 1852.0;
-		table.HPC[i] = (r_peri - opt.R_LS) / 1852.0;
-	}
-
-	table.PD_GETTH = opt.T_PD;
-	table.PD_GETIG = res.t_PDI;
-	table.PD_GETTD = res.t_Land;
-
-	if (opt.I_AZ == 0)
-	{
-		sprintf(table.DescAzMode, "OPT");
-	}
-	else
-	{
-		sprintf(table.DescAzMode, "DES");
-	}
-	table.DescAsc = res.azi*DEG;
-	table.PD_ThetaIgn = opt.theta_D*DEG;
 }
 
 void RTCC::EMGLMRAT(VECTOR3 X_P, VECTOR3 Y_P, VECTOR3 Z_P, VECTOR3 X_B, VECTOR3 Y_B, VECTOR3 Z_B, double &Pitch, double &Yaw, double &Roll, double &PB, double &YB, double &RB)
@@ -27170,7 +27321,8 @@ bool RTCC::GMGMED(char *str)
 	RTCCONLINEMON.TextBuffer[0].assign(str);
 	GMSPRINT("GMGMED", 51);
 
-	int err;
+	int err = 0;
+	unsigned param = 0;
 	if (medtype == 'A')
 	{
 		err = EMGABMED(1, code, MEDSequence);
@@ -27190,6 +27342,10 @@ bool RTCC::GMGMED(char *str)
 	else if (medtype == 'F')
 	{
 		err = PMQAFMED(code, MEDSequence);
+	}
+	else if (medtype == 'K')
+	{
+		PMKMED(code, MEDSequence, err, param);
 	}
 	else if (medtype == 'M')
 	{
@@ -27229,7 +27385,7 @@ bool RTCC::GMGMED(char *str)
 	}
 	else
 	{
-		sprintf_s(Buffer, "%c%s ERR %d", medtype, code.c_str(), err);
+		sprintf_s(Buffer, "%c%s ERR %d PARM %d", medtype, code.c_str(), err, param + 1);
 		RTCCONLINEMON.TextBuffer[0].assign(Buffer);
 		GMSPRINT("GMGMED", 51);
 	}
@@ -29555,9 +29711,130 @@ int RTCC::PMQAFMED(std::string med, std::vector<std::string> data)
 	return 0;
 }
 
-void RTCC::PMKMED(std::string med)
+void RTCC::PMKMED(std::string med, std::vector<std::string> data, int &err, unsigned &param)
 {
+	rtcc::MEDProcessingDoubleOptions dopt;
+	rtcc::MEDProcessingIntegerOptions iopt;
 
+	if (med == "19")
+	{
+		//Initialization for LM ascent rendezvous monitoring (ARM)
+
+		data.resize(8);
+
+		param = 0;
+		dopt.missing = 0;
+		dopt.scale = RAD; dopt.mincheck = true; dopt.minval = 0.0;
+		err = rtcc::MEDProcessingDouble(data, param, dopt, PZMARM.WT);
+		if (err) return;
+
+		param = 1;
+		dopt.maxcheck = true; dopt.maxval = 90.0;
+		err = rtcc::MEDProcessingDouble(data, param, dopt, PZMARM.E);
+		if (err) return;
+
+		param = 2;
+		dopt.scale = 1.0; dopt.mincheck = true; dopt.minval = 0.0; dopt.maxcheck = false;
+		err = rtcc::MEDProcessingDouble(data, param, dopt, PZMARM.CSIFlag);
+		if (err) return;
+
+		param = 3;
+		dopt.mincheck = false; dopt.maxcheck = false;
+		err = rtcc::MEDProcessingInteger(data, param, dopt, PZMARM.CDHIndicator);
+		if (err) return;
+
+		param = 4;
+		dopt.mincheck = true; dopt.minval = 0.0; dopt.maxcheck = false; dopt.scale = GetGMTLO()*3600.0;
+		err = rtcc::MEDProcessingTime(data, param, dopt, PZMARM.t_TPI_Coell);
+		if (err) return;
+
+		param = 5;
+		err = rtcc::MEDProcessingTime(data, param, dopt, PZMARM.t_Ins);
+		if (err) return;
+
+		param = 6;
+		dopt.scale = 1852.0;
+		err = rtcc::MEDProcessingDouble(data, param, dopt, PZMARM.h_min);
+		if (err) return;
+
+		param = 7;
+		dopt.mincheck = false; dopt.maxcheck = false;
+		err = rtcc::MEDProcessingDouble(data, param, dopt, PZMARM.DH);
+		if (err) return;
+	}
+	else if (med == "39")
+	{
+		//Initialization for short LM ascent rendezvous monitoring (Short ARM)
+		double dtemp;
+
+		data.resize(9);
+
+		param = 0;
+		dopt.missing = 1; dopt.scale = 0.0;
+		err = rtcc::MEDProcessingTime(data, param, dopt, dtemp);
+		if (err) return;
+
+		if (dtemp >= 0.0)
+		{
+			PZMARM.ITWEAK = true;
+			PZMARM.t_tweak = GMTfromGET(dtemp);
+		}
+		else
+		{
+			PZMARM.ITWEAK = false;
+			PZMARM.DT = abs(dtemp);
+		}
+
+		param = 1;
+		err = rtcc::MEDProcessingTime(data, param, dopt, dtemp);
+		if (err) return;
+
+		if (dtemp >= 0.0)
+		{
+			PZMARM.ITPI = true;
+			PZMARM.t_TPI_Short = GMTfromGET(dtemp);
+		}
+		else
+		{
+			PZMARM.ITPI = false;
+			PZMARM.DTPI = abs(dtemp);
+		}
+
+		dopt.missing = 0;
+		param = 2;
+		dopt.scale = RAD;
+		err = rtcc::MEDProcessingDouble(data, param, dopt, PZMARM.DTHETA);
+		if (err) return;
+
+		param = 3;
+		dopt.scale = 1852.0;
+		err = rtcc::MEDProcessingDouble(data, param, dopt, PZMARM.DH);
+		if (err) return;
+
+		param = 4;
+		dopt.scale = RAD;
+		err = rtcc::MEDProcessingDouble(data, param, dopt, PZMARM.WT);
+		if (err) return;
+
+		param = 5;
+		dopt.mincheck = true; dopt.minval = 0.0; dopt.maxcheck = false; dopt.scale = GetGMTLO()*3600.0;
+		err = rtcc::MEDProcessingTime(data, param, dopt, PZMARM.t_Ins);
+		if (err) return;
+
+		param = 6;
+		dopt.scale = RAD;
+		dopt.mincheck = true; dopt.minval = 0.0; dopt.maxcheck = true; dopt.maxval = 360.0;
+		err = rtcc::MEDProcessingDouble(data, param, dopt, PZMARM.IMUAngles.z);
+		if (err) return;
+
+		param = 7;
+		err = rtcc::MEDProcessingDouble(data, param, dopt, PZMARM.IMUAngles.y);
+		if (err) return;
+
+		param = 8;
+		err = rtcc::MEDProcessingDouble(data, param, dopt, PZMARM.IMUAngles.x);
+		if (err) return;
+	}
 }
 
 int RTCC::PMMMED(std::string med, std::vector<std::string> data)
@@ -30563,74 +30840,10 @@ int MEDProcessingEBCDIC(const std::vector<std::string> &data, unsigned i, const 
 	return 2;
 }
 
-int MEDProcessingDouble(const std::vector<std::string> &data, unsigned i, double scale, double min, double max, double &val, bool usedefault = false, std::string defaulttext = "")
-{
-	//Return value: 0 = no error, 1 = MED input not large enough, 2 = limit check failure
-
-	std::string text;
-
-	//Use default value if MED input is too small
-	if (data.size() <= i)
-	{
-		if (usedefault)
-		{
-			text = defaulttext;
-		}
-		else
-		{
-			return 1;
-		}
-	}
-	else
-	{
-		text = data[i];
-	}
-
-	//Also use default input if blank was input
-	if (usedefault && text == "")
-	{
-		text = defaulttext;
-	}
-
-	if (sscanf(text.c_str(), "%lf", &val) != 1) return 2;
-
-	if (val < min) return 2;
-	if (val > max) return 2;
-
-	val *= scale;
-	return 0;
-}
-
-int MEDProcessingTime(const std::vector<std::string> &data, unsigned i, double &time)
-{
-	//Return value: 0 = no error, 1 = MED input not large enough, 2 = limit check failure
-
-	if (data.size() <= i) return 1;
-
-	int hh, mm;
-	double ss;
-	bool pos = true;
-
-	if (sscanf(data[i].c_str(), "%d:%d:%lf", &hh, &mm, &ss) != 3)
-	{
-		return 2;
-	}
-	if (data[i][0] == '-')
-	{
-		pos = false;
-		hh = abs(hh);
-	}
-	time = 3600.0*(double)hh + 60.0*(double)mm + ss;
-	if (pos == false)
-	{
-		time = -time;
-	}
-
-	return 0;
-}
-
 int RTCC::GMSMED(std::string med, std::vector<std::string> data)
 {
+	rtcc::MEDProcessingDoubleOptions dopt;
+	rtcc::MEDProcessingIntegerOptions iopt;
 	int err;
 
 	//Enter planned or actual liftoff time
@@ -31480,66 +31693,75 @@ int RTCC::GMSMED(std::string med, std::vector<std::string> data)
 
 		double values[6];
 
+		dopt.missing = 1;
+
 		if (med == "13")
 		{
 			//Velocity
-			err = MEDProcessingDouble(data, 1, 0.3048, 0.0, DBL_MAX, values[0]);
+			dopt.scale = 0.3048; dopt.mincheck = true; dopt.minval = 0.0; dopt.maxcheck = false;
+			err = MEDProcessingDouble(data, 1, dopt, values[0]);
 			if (err) return err;
 
 			//Flight Path Angle
-			err = MEDProcessingDouble(data, 2, RAD, -90.0, 90.0, values[1]);
+			dopt.scale = RAD; dopt.mincheck = true; dopt.minval = -PI05; dopt.maxcheck = true; dopt.maxval = PI05;
+			err = MEDProcessingDouble(data, 2, dopt, values[1]);
 			if (err) return err;
 
 			//Azimuth
-			err = MEDProcessingDouble(data, 3, RAD, 0.0, 360.0, values[2]);
+			dopt.scale = RAD; dopt.mincheck = true; dopt.minval = 0.0; dopt.maxcheck = true; dopt.maxval = PI2;
+			err = MEDProcessingDouble(data, 3, dopt, values[2]);
 			if (err) return err;
 
 			//Latitude
-			err = MEDProcessingDouble(data, 4, RAD, -90.0, 90.0, values[3]);
+			dopt.scale = RAD; dopt.mincheck = true; dopt.minval = -PI05; dopt.maxcheck = true; dopt.maxval = PI05;
+			err = MEDProcessingDouble(data, 4, dopt, values[3]);
 			if (err) return err;
 
 			//Longitude
-			err = MEDProcessingDouble(data, 5, RAD, -180.0, 180.0, values[4]);
+			dopt.scale = RAD; dopt.mincheck = true; dopt.minval = -PI; dopt.maxcheck = true; dopt.maxval = PI;
+			err = MEDProcessingDouble(data, 5, dopt, values[4]);
 			if (err) return err;
 
 			//Height
-			err = MEDProcessingDouble(data, 6, 1852.0, 0.0, DBL_MAX, values[5]);
+			dopt.scale = 1852.0; dopt.mincheck = true; dopt.minval = 0; dopt.maxcheck = false;
+			err = MEDProcessingDouble(data, 6, dopt, values[5]);
 			if (err) return err;
 		}
 		else
 		{
+			dopt.scale = SystemParameters.MCCMCU; dopt.mincheck = true; dopt.minval = -60.0*SystemParameters.MCCMCU; dopt.maxcheck = true; dopt.maxval = 60.0*SystemParameters.MCCMCU;
+
 			//Position X
-			err = MEDProcessingDouble(data, 1, SystemParameters.MCCMCU, -60.0, 60.0, values[0]);
+			err = MEDProcessingDouble(data, 1, dopt, values[0]);
 			if (err) return err;
 
 			//Position Y
-			err = MEDProcessingDouble(data, 2, SystemParameters.MCCMCU, -60.0, 60.0, values[1]);
+			err = MEDProcessingDouble(data, 2, dopt, values[1]);
 			if (err) return err;
 
 			//Position Z
-			err = MEDProcessingDouble(data, 3, SystemParameters.MCCMCU, -60.0, 60.0, values[2]);
+			err = MEDProcessingDouble(data, 3, dopt, values[2]);
 			if (err) return err;
 
 			//Velocity X
-			err = MEDProcessingDouble(data, 4, SystemParameters.MCCMCU / 3600.0, -60.0, 60.0, values[3]);
+			err = MEDProcessingDouble(data, 4, dopt, values[3]);
 			if (err) return err;
 
 			//Velocity Y
-			err = MEDProcessingDouble(data, 5, SystemParameters.MCCMCU / 3600.0, -60.0, 60.0, values[4]);
+			err = MEDProcessingDouble(data, 5, dopt, values[4]);
 			if (err) return err;
 
 			//Velocity Z
-			err = MEDProcessingDouble(data, 6, SystemParameters.MCCMCU / 3600.0, -60.0, 60.0, values[5]);
+			err = MEDProcessingDouble(data, 6, dopt, values[5]);
 			if (err) return err;
 		}
 
-		double get, gmt;
+		double gmt;
 
 		//Time
-		err = MEDProcessingTime(data, 7, get);
+		dopt.mincheck = true; dopt.minval = 0.0; dopt.maxcheck = false; dopt.scale = GetGMTLO();
+		err = MEDProcessingTime(data, 7, dopt, gmt);
 		if (err) return err;
-
-		gmt = GMTfromGET(get);
 
 		//Live/Static Ephemeris Indicator
 		const std::vector<std::string> EphemIndTable = {"L", "B", "S", "G"};
@@ -35837,7 +36059,7 @@ int RTCC::BMQDCMED(std::string med, std::vector<std::string> data)
 
 		return 0;
 	}
-	return 1;
+	return 0;
 }
 
 int RTCC::BMSVPSVectorFetch(const std::string &vecid, EphemerisData &sv_out)
@@ -39202,4 +39424,163 @@ void RTCC::RMDRXDV(bool rte)
 			tab->lat_IP = tab->lng_IP = 0.0;
 		}
 	}
+}
+
+void RTCC::PMDARM(EphemerisData sv_CSM, EphemerisData sv_LM)
+{
+	AscentRendezvousMonitor arm(this);
+
+	ARMInputs in;
+	ARMDisplay out;
+	int err = 0;
+	bool calc = false;
+	
+	//Only calculate if we are past insertion time
+	//if (PZMARM.t_Ins != 0.0 && (RTCCPresentTimeGMT() > PZMARM.t_Ins)) calc = true;
+	calc = true;
+
+	if (calc)
+	{
+
+		in.sv_CSM = sv_CSM;
+		in.sv_LM[0] = sv_LM;
+		in.WT = PZMARM.WT;
+		in.E = PZMARM.E;
+		in.CSIFlag = PZMARM.CSIFlag;
+		in.CDHIndicator = PZMARM.CDHIndicator;
+		in.t_TPI = PZMARM.t_TPI_Coell;
+		in.h_min = PZMARM.h_min;
+		in.DH = PZMARM.DH;
+		in.t_Ins = PZMARM.t_Ins;
+
+		err = arm.Calc(in, out);
+	}
+
+	rtcc::RTCCDisplay disp;
+	std::string strtemp;
+
+	disp.MSKNumber = 232;
+
+	DynamicDisplayData.DFLDouble(disp, PZMARM.WT*DEG, "%.2lf", 288, 950);
+	DynamicDisplayData.DFLDouble(disp, PZMARM.E*DEG, "%.2lf", 480, 950);
+	DynamicDisplayData.DFLDouble(disp, PZMARM.CSIFlag, "%.0lf", 640, 950);
+	DynamicDisplayData.DFLInteger(disp, PZMARM.CDHIndicator, "%d", 800, 950);
+	DynamicDisplayData.DFLTime(disp, GETfromGMT(PZMARM.t_TPI_Coell), 288, 918);
+	DynamicDisplayData.DFLDouble(disp, PZMARM.h_min / 1852.0, "%.1lf", 480, 918);
+	DynamicDisplayData.DFLTime(disp, GETfromGMT(PZMARM.t_Ins), 768, 918);
+
+	DynamicDisplayData.DFLInteger(disp, err, "ERR %d", 500, 64);
+
+	//Only show display data if display was calculated
+	if (calc)
+	{
+		if (out.tab[0].TweakRequired)
+		{
+			strtemp = "NO GO";
+		}
+		else
+		{
+			strtemp = "   GO";
+		}
+		DynamicDisplayData.DisplayFormatting(disp, strtemp, 432, 790, oapi::Sketchpad::RIGHT);
+
+		DynamicDisplayData.DFLTime(disp, out.tab[0].GETI, 432, 726);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].DV_Tweak / 0.3048, "%.1lf", 432, 694);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].HP / 1852.0, "%.1lf", 432, 662);
+
+		DynamicDisplayData.DFLTime(disp, out.tab[0].GET_CSI, 432, 598);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].DV_CSI / 0.3048, "%.1lf", 432, 566);
+		DynamicDisplayData.DFLTime(disp, out.tab[0].GET_CDH, 432, 534);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].DV_CDH / 0.3048, "%.1lf", 432, 502);
+
+		DynamicDisplayData.DFLTime(disp, out.tab[0].GET_Kick, 432, 438);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].DV_Kick / 0.3048, "%.1lf", 432, 406);
+	}
+
+	DynamicDisplayData.UpdateDisplay(disp);
+}
+
+void RTCC::PMDSARM(EphemerisData sv_CSM, EphemerisData sv_LM)
+{
+	ShortAscentRendezvousMonitor arm(this);
+
+	ShortARMInputs in;
+	ShortARMDisplay out;
+	REFSMMATData refs;
+	int err = 0;
+	bool calc = false;
+
+	//Only calculate if we are past insertion time
+	//if (PZMARM.t_Ins != 0.0 && (RTCCPresentTimeGMT() > PZMARM.t_Ins)) calc = true;
+	calc = true;
+
+	refs = EZJGMTX3.data[0];
+
+	if (calc)
+	{
+
+		in.sv_CSM = sv_CSM;
+		in.sv_LM[0] = sv_LM;
+		in.ITWEAK = PZMARM.ITWEAK;
+		in.ITPI = PZMARM.ITPI;
+		in.t_tweak = PZMARM.t_tweak;
+		in.t_TPI = PZMARM.t_TPI_Short;
+		in.DT = PZMARM.DT;
+		in.DTPI = PZMARM.DTPI;
+		in.DTHETA = PZMARM.DTHETA;
+		in.DH = PZMARM.DH;
+		in.WT = PZMARM.WT;
+		in.IMUAngles = PZMARM.IMUAngles;
+		in.IREF = PZMARM.IREF;
+		in.Axhor = PZMARM.Axhor;
+		in.REFSMMAT = refs.REFSMMAT;
+		in.t_Ins = PZMARM.t_Ins;
+
+		err = arm.Calc(in, out);
+	}
+
+	rtcc::RTCCDisplay disp;
+	std::string strtemp;
+	char Buff[128];
+
+	disp.MSKNumber = 233;
+
+	DynamicDisplayData.DFLDouble(disp, PZMARM.WT*DEG, "%.2lf", 288, 950);
+	DynamicDisplayData.DFLDouble(disp, PZMARM.DTHETA*DEG, "%.2lf", 480, 950);
+	DynamicDisplayData.DFLTime(disp, GETfromGMT(PZMARM.t_TPI_Short), 288, 918);
+	DynamicDisplayData.DFLTime(disp, GETfromGMT(PZMARM.t_Ins), 576, 918);
+
+	FormatREFSMMATCode(RTCC_REFSMMAT_TYPE_CUR, refs.ID, Buff);
+	DynamicDisplayData.DisplayFormatting(disp, Buff, 918, 918, oapi::Sketchpad::RIGHT);
+
+	DynamicDisplayData.DFLInteger(disp, err, "ERR %d", 500, 64);
+
+	//Only show display data if display was calculated
+	if (calc)
+	{
+		if (out.tab[0].DoBailout)
+		{
+			strtemp = "BAIL";
+		}
+		else
+		{
+			strtemp = "TWEAK";
+		}
+		DynamicDisplayData.DisplayFormatting(disp, strtemp, 432, 790, oapi::Sketchpad::RIGHT);
+
+		DynamicDisplayData.DFLTime(disp, out.tab[0].GETI, 432, 726);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].DV_B.x / 0.3048, "%.1lf", 432, 694);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].DV_B.y / 0.3048, "%.1lf", 432, 662);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].DV_B.z / 0.3048, "%.1lf", 432, 630);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].HP / 1852.0, "%.1lf", 432, 598);
+
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].Att.z*DEG, "%03.0lf", 432, 566);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].Att.y*DEG, "%03.0lf", 432, 534);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].Att.x*DEG, "%03.0lf", 432, 502);
+
+		DynamicDisplayData.DFLTime(disp, out.tab[0].GETTPI, 432, 438);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].DV_TPI / 0.3048, "%.1lf", 432, 406);
+	}
+
+	DynamicDisplayData.UpdateDisplay(disp);
 }

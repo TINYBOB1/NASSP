@@ -91,7 +91,6 @@ namespace mission
 #define RCS_CM_RING_1		4
 #define RCS_CM_RING_2		5
 
-
 ///
 /// \brief Cabin atmosphere status.
 /// \ingroup InternalInterface
@@ -1212,6 +1211,14 @@ public:
 	
 	void SetCMdocktgtMesh();
 
+	/// Set Altimeter Cover
+	void SetAltimeterCover();
+	void SetOrdealMesh();
+
+	/// Waste Disposal
+	void SetWasteDisposal();
+	void SetPanel382Cover();
+
 	///
 	/// \brief Set VC seats mesh
 	///
@@ -1543,6 +1550,30 @@ protected:
 	int hatchPanel600EnabledLeft;
 	int hatchPanel600EnabledRight;
 	int panel382Enabled;
+
+	int altimeterCovered;
+	int ordealStowed;
+
+/// BEGINN TEST by JORDAN
+
+/// Waste Disposal
+	int wasteDisposalStatus = true;
+	double wasteDisposalProc;
+	int meshidxWasteDisposal;
+	int meshidxWasteDisposalAll;
+	UINT wasteDisposalAnim;
+	UINT wasteDisposalAnimAll;
+	AnimState wasteDisposalState;
+	AnimState wasteDisposalStateAll;
+
+/// Panel 382 Cover
+	int panel382CoverStatus = true;
+	double panel382CoverProc;
+	int meshidxpanel382Cover;
+	UINT panel382CoverAnim;
+	AnimState panel382CoverState;
+
+/// END TEST by JORDAN
 
 	///
 	/// \brief Right-hand FDAI.

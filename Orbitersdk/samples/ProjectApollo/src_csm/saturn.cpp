@@ -1510,86 +1510,6 @@ void Saturn::clbkPreStep(double simt, double simdt, double mjd)
 	sprintf(buffer, "MissionTime %f, simt %f, simdt %f, time(0) %lld", MissionTime, simt, simdt, time(0)); 
 	TRACE(buffer);
 
-
-
-	// By Jordan
-	// ANIMATED MESHES
-/*
-	if (panel382CoverState.Opening()) {
-		double dp = simdt * 1.5;
-		panel382CoverState.Move(dp);
-		SetAnimation(panel382CoverAnim, panel382CoverState.pos);
-		if (panel382CoverState.pos >= 1.0) {
-			panel382CoverState.action = AnimState::STOPPED;
-		}
-	};
-
-	if (panel382CoverState.Closing()) {
-		double dp = simdt * 1.5;
-		panel382CoverState.Move(dp);
-		SetAnimation(panel382CoverAnim, panel382CoverState.pos);
-		if (panel382CoverState.pos <= 0.0) {
-			panel382CoverState.action = AnimState::STOPPED;
-		}
-	};
-
-	if (wasteDisposalState.Opening()) {
-		double dp = simdt / 1.5; //  1.5 = Anim length in Seconds
-		wasteDisposalState.Move(dp);
-		SetAnimation(wasteDisposalAnim, wasteDisposalState.pos);
-		if (wasteDisposalState.pos >= 1.0) {
-			wasteDisposalState.action = AnimState::STOPPED;
-		}
-	};
-
-	if (wasteDisposalState.Closing()) {
-		double dp = simdt / 1.5;
-		wasteDisposalState.Move(dp);
-		SetAnimation(wasteDisposalAnim, wasteDisposalState.pos);
-		if (wasteDisposalState.pos <= 0.0) {
-			wasteDisposalState.action = AnimState::STOPPED;
-		}
-	};
-*/
-	if (panel382CoverState.action == AnimState::CLOSING || panel382CoverState.action == AnimState::OPENING) {
-		double speed = 1.5; // Anim length in Seconds
-		double dp = oapiGetSimStep() * speed;
-		if (panel382CoverState.action == AnimState::CLOSING) {
-			if (panel382CoverState.pos > 0.0)
-				panel382CoverState.pos = max (0.0, panel382CoverState.pos-dp);
-			else
-				panel382CoverState.action = AnimState::CLOSED;
-		} else { // opening
-			if (panel382CoverState.pos < 1.0)
-				panel382CoverState.pos = min (1.0, panel382CoverState.pos+dp);
-			else
-				panel382CoverState.action = AnimState::OPEN;
-		}
-		SetAnimation (panel382CoverAnim, panel382CoverState.pos);
-	}
-
-	if (wasteDisposalState.action == AnimState::CLOSING || wasteDisposalState.action == AnimState::OPENING) {
-		double speed = 0.2; // Anim length in Seconds    0.1 = 10 Sec, 0.2 = 5 Sec, 1.0 = 1 Sec etc.
-		double dp = oapiGetSimStep() * speed;
-		if (wasteDisposalState.action == AnimState::CLOSING) {
-			if (wasteDisposalState.pos > 0.0)
-				wasteDisposalState.pos = max (0.0, wasteDisposalState.pos-dp);
-			else
-				wasteDisposalState.action = AnimState::CLOSED;
-		} else { // opening
-			if (wasteDisposalState.pos < 1.0)
-				wasteDisposalState.pos = min (1.0, wasteDisposalState.pos+dp);
-			else
-				wasteDisposalState.action = AnimState::OPEN;
-		}
-		SetAnimation (wasteDisposalAnim, wasteDisposalState.pos);
-	}
-
-
-	// By Jordan End
-
-
-
 	//
 	// We die horribly if you set 100x or higher acceleration during launch.
 	//
@@ -1860,8 +1780,6 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 		oapiWriteScenario_float(scn, "LMASCEMPTY", LMAscentEmptyMassKg);
 	}
 	oapiWriteScenario_int (scn, "COASENABLED", coasEnabled);
-	oapiWriteScenario_int (scn, "ALTIMETERCOVERED", altimeterCovered);
-	oapiWriteScenario_int (scn, "ORDEALSTOWED", ordealStowed);
 	oapiWriteScenario_int (scn, "ORDEALENABLED", ordealEnabled);
 	oapiWriteScenario_int (scn, "OPTICSDSKYENABLED", opticsDskyEnabled);
 	oapiWriteScenario_int (scn, "HATCHPANEL600ENABLED", hatchPanel600EnabledLeft);
@@ -2576,12 +2494,6 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 	}
 	else if (!strnicmp (line, "COASENABLED", 11)) {
 		sscanf (line + 11, "%i", &coasEnabled);
-	}
-	else if (!strnicmp (line, "ALTIMETERCOVERED", 16)) {
-		sscanf (line + 16, "%i", &altimeterCovered);
-	}
-	else if (!strnicmp (line, "ORDEALSTOWED", 12)) {
-		sscanf (line + 12, "%i", &ordealStowed);
 	}
 	else if (!strnicmp(line, "CHKVAR_", 7)) {
 		for (int i = 0; i < 16; i++) {

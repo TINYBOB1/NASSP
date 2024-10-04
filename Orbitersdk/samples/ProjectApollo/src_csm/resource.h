@@ -902,10 +902,6 @@
 #define AID_VC_Cab_Press_Rel_Handle1    3210
 #define AID_VC_Cab_Press_Rel_Handle2    3211
 #define AID_VC_Prim_Gly_Handle          3212
-#define AID_VC_Altimeter_Cover          3213
-#define AID_VC_Ordeal_Stowed			3214
-#define AID_VC_Waste_Disposal			3215
-#define AID_VC_Panel382_Cover			3216
 
 // VC Active Areas (Panel 2)
 #define AID_VC_PANEL_2			((id >= 4800) && (id <= 4999))
@@ -1670,8 +1666,19 @@
 #define AID_VC_CUE_CARD_LOCATION_11	7010
 #define AID_VC_CUE_CARD_LOCATION_4B	7011
 
-// CMVC Lighting
-#define AID_CMVC_LIGHTING 7012
+// Integral Lights Panel 8
+#define AID_VC_INTEGRAL_LIGHT_P8  7012
+#define AID_VC_FLOOD_LIGHT_P8     7013
+#define AID_VC_NUMERICS_LIGHT_P8  7014
+
+// Integral Lights Panel 5
+#define AID_VC_INTEGRAL_LIGHT_P5  7015
+#define AID_VC_FLOOD_LIGHT_P5     7016
+
+// Integral Lights LEB
+#define AID_VC_INTEGRAL_LIGHT_P100  7017
+#define AID_VC_FLOOD_LIGHT_P100     7018
+#define AID_VC_NUMERICS_LIGHT_P100  7019
 
 // Integral Lights Cue Card
 #define AID_VC_CUE_CARDS_LIGHTING  7020

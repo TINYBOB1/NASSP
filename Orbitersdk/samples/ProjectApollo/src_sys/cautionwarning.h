@@ -105,22 +105,8 @@ public:
 	virtual ~CautionWarningSystem();
 
 	///
-	/// \brief Reads The CW Lights State
-	/// This function Reads the CW Lights State
-	///
-	/// \param LightState Array of light states.
-	///
-	int GetCWLightStates(bool *LightState);
-
-	/// by Jordan beginn
-	/// Test if CW Testswitch is pressed
-	///
-	int GetCWLightTest();
-	///by Jordan end
-
-	///
 	/// \brief Test caution and warning lights.
-	/// \param state Which test to perform.
+	/// \param state Which tset to perform.
 	///
 	virtual void LightTest(LightTestState state);
 
@@ -141,24 +127,6 @@ public:
 	/// \param mode Operating mode to set.
 	///
 	void SetMode(CWSOperationMode mode);
-
-// by Jordan beginn
-	///
-	/// \brief Read the operating mode.
-	///
-	int GetMode(void);
-
-	///
-	/// Is Master Alarm Lit
-	///
-	bool IsMasterAlarmLit(void);
-
-	///
-	/// Is Master Alarm Light Enabled
-	///
-	bool IsMasterAlarmLightEnabled(void);
-
-	// by Jordan end
 
 	///
 	/// \brief Set the CWS source.

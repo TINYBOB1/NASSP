@@ -27,15 +27,6 @@
 
 #define NUM_ELEMENTS(x) (sizeof((x))/sizeof((x)[0]))
 
-#ifdef _OPENORBITER
-#define MAT_EMISSION MatProp::Emission
-#define MAT_LIGHT MatProp::Light
-#else
-#define MAT_EMISSION MESHM_EMISSION2
-#define MAT_LIGHT MESHM_EMISSION
-#endif
-
-
 namespace nassp
 {
 	namespace utils

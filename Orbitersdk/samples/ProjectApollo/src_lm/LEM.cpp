@@ -1781,6 +1781,7 @@ void LEM::DefineAnimations()
 	OverheadHatch.DefineAnimationsVC(vcidx);
 	ForwardHatch.DefineAnimationsVC(vcidx);
 	if (stage < 2) DPS.DefineAnimations(dscidx);
+	if (stage < 2) LR.DefineAnimations(dscidx);
 	if (stage < 1 && pMission->LMHasLegs()) eds.DefineAnimations(dscidx);
 	DefineVCAnimations();
 }

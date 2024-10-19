@@ -1540,6 +1540,12 @@ protected:
 
 	int LEMWindowShades;
 
+	/////////////////////
+    // LEM EVA Antenna //
+	/////////////////////
+ 
+	CircuitBrakerSwitch EvaAntennaHandle;
+
 	///////////////////////////
 	// ORDEAL Panel switches //
 	///////////////////////////

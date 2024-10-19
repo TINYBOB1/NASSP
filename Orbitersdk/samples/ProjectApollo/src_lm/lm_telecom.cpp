@@ -98,6 +98,10 @@ LM_VHF::LM_VHF():
 	receiveB = false;
 	transmitA = false;
 	transmitB = false;
+
+	anim_VHF = 0;
+	vhf_proc = 0;
+	vhf_proc_last = 0;
 }
 
 void LM_VHF::Init(LEM *vessel, h_HeatLoad *vhfh){
@@ -451,6 +455,20 @@ bool LM_PCM::TimingSignal() //Currently just looking for power from the PCM/TE c
 	}
 
 	return false;
+}
+
+void LM_VHF::DefineAnimations(UINT idx)
+{
+	//EVA VHF Antenna Animation
+	ANIMATIONCOMPONENT_HANDLE EVA_VHF;
+	const VECTOR3 LM_VHF_PIVOT = { -0.35859, 1.3652, -0.89566 };	//Antenna Pivot Point
+	const VECTOR3 LM_VHF_SCALE = { -0.3588, 2.1558, -0.93309 };		//Antenna Cone Scale Point
+	static UINT meshgroup_vhf[2] = { AS_GRP_EVA_Ant, AS_GRP_EVA_AntTop };
+	static MGROUP_ROTATE EVAAnt(idx, meshgroup_vhf, 2, LM_VHF_PIVOT, _V(-1, 0, 0), (float)(RAD * 90));
+	static UINT meshgroup_vhfcone = AS_GRP_EVA_AntCone;
+	cone = new MGROUP_SCALE EVACone(idx, &meshgroup_vhfcone, 1, LM_VHF_SCALE, _V(-0.15, -0.15, 0));
+	anim_VHF = lem->CreateAnimation(0.0);
+
 }
 
 void LM_PCM::SystemTimestep(double simdt)

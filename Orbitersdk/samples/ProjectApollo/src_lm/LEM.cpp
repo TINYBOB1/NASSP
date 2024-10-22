@@ -961,11 +961,36 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 	return 0;
 }
 
+void LEM::SetAnimations(double simdt) {
+	//
+	//EVA Antenna
+	//
+	if (EVAAntHandleState.action == AnimState::CLOSING || EVAAntHandleState.action == AnimState::OPENING) {
+		double speed = 1.0; // Anim length in Seconds
+		double dp = simdt / speed;
+		if (EVAAntHandleState.action == AnimState::CLOSING) {
+			if (EVAAntHandleState.pos > 0.0) {
+				EVAAntHandleState.pos = max(0.0, EVAAntHandleState.pos - dp);
+			}
+			else
+				EVAAntHandleState.action = AnimState::CLOSED;
+		} else { // opening
+			if (EVAAntHandleState.pos < 1.0)
+				EVAAntHandleState.pos = min (1.0, EVAAntHandleState.pos + dp);
+			else
+				EVAAntHandleState.action = AnimState::OPEN;
+		}
+		SetAnimation(EVAAntHandleAnim, EVAAntHandleState.pos);
+	}
+}
+
 //
 // Timestep code.
 //
 
 void LEM::clbkPreStep (double simt, double simdt, double mjd) {
+
+	SetAnimations(simdt);
 
 	if (CheckPanelIdInTimestep) {
 		oapiSetPanel(PanelId);
@@ -1692,6 +1717,8 @@ void LEM::clbkVisualCreated(VISHANDLE vis, int refcount)
 		vcmesh = GetDevMesh(vis, vcidx);
 		SetCOAS();
 	}
+
+	AnimEVAAntHandle();
 }
 
 void LEM::clbkVisualDestroyed(VISHANDLE vis, int refcount)

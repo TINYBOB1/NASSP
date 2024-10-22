@@ -2611,27 +2611,27 @@ void Saturn::DefineVCAnimations()
 	MainPanelVC.ClearSwitches();
 
 	/// BEGINN TEST by JORDAN
-	/// Waste Disposal
-	// Knob
-	static UINT wasteDisposal[1] = { VC_GRP_WasteDisposalDoor };
-	static MGROUP_ROTATE wasteDisposalKnob(meshidxWasteDisposal, wasteDisposal, 1, _V(1.0773, -0.255847, -0.165491), _V(-1, 0, 0), (float)(-60.0 / 180.0 * PI));
-	wasteDisposalAnim = CreateAnimation(0.0);
-	AddAnimationComponent(wasteDisposalAnim, 0, 1, &wasteDisposalKnob);
-
-
-	// knob + frame
-	static UINT wasteDisposalAll[2] = { VC_GRP_WasteDisposalDoor, VC_GRP_WasteDisposalFrame };
-	static MGROUP_ROTATE wasteDisposalKnobAll(meshidxWasteDisposalAll, wasteDisposalAll, 2, _V(1.07709, -0.257737, -0.098881), _V(0, -1, 0), (float)(-120.0 / 180.0 * PI));
-	wasteDisposalAnimAll = CreateAnimation(0.0);
-	AddAnimationComponent(wasteDisposalAnimAll, 0, 1, &wasteDisposalKnobAll);
 
 	// ***ATTENTION*** ANIMATION BUG IF I PUT THE CODE FOR PANEL382COVER BEFORE WASTEDISPOSAL
+	// ***SEAMS TO WORK AFTER COMBINING THE ANIMATION OF THE WASTE DISPOSAL
 	// Panel382Cover
 	static UINT Panel382Cover[1] = { VC_GRP_Panel382_Cover };
-	static MGROUP_ROTATE panel382CoverMesh(meshidxpanel382Cover, Panel382Cover, 1, _V(-1.0863, 0.2566, -0.66875), _V(0, 0, 1), (float)(120.0 / 180.0 * PI));
+	static MGROUP_ROTATE panel382CoverMesh(meshidxpanel382Cover, Panel382Cover, 1, _V(-1.0863, 0.2566, -0.66875), _V(0, 0, 1), (float)(120.0 * RAD));
 	panel382CoverAnim = CreateAnimation(0.0);
 	AddAnimationComponent(panel382CoverAnim, 0, 1, &panel382CoverMesh);
 
+	// Waste Disposal
+	// Define animation for the Rotation Knob
+	static UINT wasteDisposal[1] = { VC_GRP_WasteDisposalDoor };
+	static MGROUP_ROTATE wasteDisposalKnob(meshidxWasteDisposal, wasteDisposal, 1, _V(1.0773, -0.255847, -0.165491), _V(-1, 0, 0), (float)(-60.0 * RAD));
+
+	// Define animation for both the knob and the frame
+	static UINT wasteDisposalAll[2] = { VC_GRP_WasteDisposalDoor, VC_GRP_WasteDisposalFrame };
+	static MGROUP_ROTATE wasteDisposalKnobAll(meshidxWasteDisposalAll, wasteDisposalAll, 2, _V(1.07709, -0.257737, -0.098881), _V(0, -1, 0), (float)(-120.0 * RAD));
+
+	wasteDisposalAnim = CreateAnimation(0.0);
+	AddAnimationComponent(wasteDisposalAnim, 0, 0.5, &wasteDisposalKnob);
+	AddAnimationComponent(wasteDisposalAnim, 0.5, 1, &wasteDisposalKnobAll);
 
 	/// END TEST by JORDAN
 

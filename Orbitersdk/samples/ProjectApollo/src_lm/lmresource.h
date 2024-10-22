@@ -1358,6 +1358,8 @@
 #define AID_VC_ACTOVRDCDR               5026
 #define AID_VC_ACTOVRDLMP               5027
 
+#define AID_VC_EVA_Ant_Handle           5100
+
 #define IDB_LEM_FDAI_ROLL               10006
 
 // Next default values for new objects

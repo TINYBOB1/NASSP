@@ -1593,6 +1593,13 @@ protected:
 	UINT panel382CoverAnim;
 	AnimState panel382CoverState;
 
+/// Altimeter Cover
+	int altimeterCoverStatus;
+	double altimeterCoverProc;
+	int meshidxaltimeterCover;
+	UINT altimeterCoverAnim;
+	AnimState altimeterCoverState;
+	
 /// END TEST by JORDAN
 
 	///

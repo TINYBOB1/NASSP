@@ -1345,14 +1345,22 @@ void Saturn::SetVCSeatsMesh() {
 }
 
 void Saturn::SetAltimeterCover() {
+/*
 	GROUPEDITSPEC alt_meter_plug;
 	alt_meter_plug.flags = GRPEDIT_SETUSERFLAG;
-	if (altimeterCovered) {
+	if (altimeterCoverState.pos < 1.0) {
 		alt_meter_plug.UsrFlag = 1;
 		oapiEditMeshGroup(vcmesh, VC_GRP_Altimeter_Pluger, &alt_meter_plug);
 	} else {
 		alt_meter_plug.UsrFlag = 3;
 		oapiEditMeshGroup(vcmesh, VC_GRP_Altimeter_Pluger, &alt_meter_plug);
+	}
+*/
+
+	if (altimeterCovered) {
+		altimeterCoverState.action = AnimState::OPENING;
+	} else {
+		altimeterCoverState.action = AnimState::CLOSING;
 	}
 }
 

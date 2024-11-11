@@ -543,9 +543,6 @@ public:
 	void StartSeparationPyros();
 	void StopSeparationPyros();
 
-	void AnimEVAAntHandle();
-	void SetAnimations(double);
-
 	//
 	// VISHANDLE
 	//
@@ -1770,16 +1767,6 @@ protected:
 	double vcFreeCamz;
 	double vcFreeCamSpeed;
 	double vcFreeCamMaxOffset;
-
-	//
-	// EVA Antenna Handle
-	//
-	int EVAAntHandleStatus = false;
-	double EVAAntHandleProc;
-	int meshidxEVAAntHandle;
-	UINT EVAAntHandleAnim;
-	AnimState EVAAntHandleState;
-
 
 	//
 	// Failures.

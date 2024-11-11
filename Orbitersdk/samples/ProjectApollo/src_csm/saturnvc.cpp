@@ -2639,6 +2639,24 @@ void Saturn::DefineVCAnimations()
 	AddAnimationComponent(wasteDisposalAnim, 0, 0.5, &wasteDisposalKnob);
 	AddAnimationComponent(wasteDisposalAnim, 0.5, 1, &wasteDisposalKnobAll);
 
+	// Altimeter Cover
+	static UINT altimeterCover[1] = { VC_GRP_Altimeter_Pluger };
+
+	static MGROUP_ROTATE    altimeterCoverMesh1(0, altimeterCover, 1, _V(-0.524273, 0.914852, 0.429616), _V(-1, 0, 0), (float)(-60.0 * RAD));
+	static MGROUP_TRANSLATE altimeterCoverMesh2(0, altimeterCover, 1, _V(0,  0.011831, -0.035858));
+	static MGROUP_TRANSLATE altimeterCoverMesh3(0, altimeterCover, 1, _V(0, -0.050791, -0.091839));
+	static MGROUP_TRANSLATE altimeterCoverMesh4(0, altimeterCover, 1, _V(0, -0.634309, -0.156401));
+	static MGROUP_TRANSLATE altimeterCoverMesh5(0, altimeterCover, 1, _V(0, -0.061196,  0.047939));
+	static MGROUP_TRANSLATE altimeterCoverMesh6(0, altimeterCover, 1, _V(0,  0.000000,  0.097930));
+
+	altimeterCoverAnim = CreateAnimation(0.0);
+	AddAnimationComponent(altimeterCoverAnim, 0.2, 0.4, &altimeterCoverMesh1); // Rotation
+	AddAnimationComponent(altimeterCoverAnim, 0.0, 0.2, &altimeterCoverMesh2); // Translation
+	AddAnimationComponent(altimeterCoverAnim, 0.2, 0.3, &altimeterCoverMesh3); // Translation
+	AddAnimationComponent(altimeterCoverAnim, 0.3, 0.8, &altimeterCoverMesh4); // Translation
+	AddAnimationComponent(altimeterCoverAnim, 0.8, 0.8, &altimeterCoverMesh5); // Translation
+	AddAnimationComponent(altimeterCoverAnim, 0.8, 1.0, &altimeterCoverMesh6); // Translation
+
 	/// END TEST by JORDAN
 
 

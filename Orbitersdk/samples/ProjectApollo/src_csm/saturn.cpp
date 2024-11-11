@@ -1234,7 +1234,6 @@ void Saturn::SetAnimations(double simdt)
 
 	if (panel382CoverState.action == AnimState::CLOSING || panel382CoverState.action == AnimState::OPENING) {
 		double speed = 0.5; // Anim length in Seconds
-		//double dp = oapiGetSimStep() * speed;
 		double dp = simdt / speed;
 		if (panel382CoverState.action == AnimState::CLOSING) {
 			if (panel382CoverState.pos > 0.0)
@@ -1266,6 +1265,23 @@ void Saturn::SetAnimations(double simdt)
 				wasteDisposalState.action = AnimState::OPEN;
 		}
 		SetAnimation (wasteDisposalAnim, wasteDisposalState.pos);
+	}
+
+	if (altimeterCoverState.action == AnimState::CLOSING || altimeterCoverState.action == AnimState::OPENING) {
+		double speed = 2.0; // Anim length in Seconds
+		double dp = simdt / speed;
+		if (altimeterCoverState.action == AnimState::CLOSING) {
+			if (altimeterCoverState.pos > 0.0)
+				altimeterCoverState.pos = max (0.0, altimeterCoverState.pos-dp);
+			else
+				altimeterCoverState.action = AnimState::CLOSED;
+		} else { // Stowing
+			if (altimeterCoverState.pos < 1.0)
+				altimeterCoverState.pos = min (1.0, altimeterCoverState.pos+dp);
+			else
+				altimeterCoverState.action = AnimState::OPEN; //Stowed
+		}
+		SetAnimation (altimeterCoverAnim, altimeterCoverState.pos);
 	}
 
 	// By Jordan End
@@ -2275,6 +2291,10 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 	}
 	else if (!strnicmp (line, "ALTIMETERCOVERED", 16)) {
 		sscanf (line + 16, "%i", &altimeterCovered);
+		if (altimeterCovered) {
+			altimeterCoverState.pos = 1.0;
+//			SetAnimation(altimeterCoverAnim, altimeterCoverState.pos);
+		}
 	}
 	else if (!strnicmp (line, "ORDEALSTOWED", 12)) {
 		sscanf (line + 12, "%i", &ordealStowed);

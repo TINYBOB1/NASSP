@@ -725,6 +725,42 @@ void Saturn::initSaturn()
 	flashlightOn = 0;
 
 	//
+	// FloodLight Panel 5
+	//
+	floodLight_P5 = 0;
+	floodLightColor_P5 = { 1,1,1,0 };
+	floodLightColor2_P5 = { 0,0,0,0 };
+	floodLightPos_P5 = VECTOR3{ 0.3, 0.85, -0.1 };
+	vesselPosGlobal_P5 = { 0,0,0 };
+	floodLightDirGlobal_P5 = { 0,0,1 };
+	floodLightDirLocal_P5 = { 0,0,1 };
+	floodLightOn_P5 = true;
+
+	//
+	// FloodLight Panel 8
+	//
+	floodLight_P8 = 0;
+	floodLightColor_P8 = { 1,1,1,0 };
+	floodLightColor2_P8 = { 0,0,0,0 };
+	floodLightPos_P8 = VECTOR3{ -0.3, 0.85, -0.1 };
+	vesselPosGlobal_P8 = { 0,0,0 };
+	floodLightDirGlobal_P8 = { 0,0,1 };
+	floodLightDirLocal_P8 = { 0,0,1 };
+	floodLightOn_P8 = true;
+
+	//
+	// FloodLight Panel 100(LEB)
+	//
+	floodLight_P100 = 0;
+	floodLightColor_P100 = { 1,1,1,0 };
+	floodLightColor2_P100 = { 0,0,0,0 };
+	floodLightPos_P100 = VECTOR3{ 0.0, 0.0, 0.3 };
+	vesselPosGlobal_P100 = { 0,0,0 };
+	floodLightDirGlobal_P100 = { 0,0,1 };
+	floodLightDirLocal_P100 = { 0,0,1 };
+	floodLightOn_P100 = true;
+
+	//
 	// Save the last view offset set.
 	//
 
@@ -1357,6 +1393,7 @@ void Saturn::clbkPreStep(double simt, double simdt, double mjd)
 	if ((oapiGetFocusObject() == GetHandle()) && (oapiCockpitMode() == COCKPIT_VIRTUAL) && (oapiCameraMode() == CAM_COCKPIT)) {
 		//We have focus on this vessel, and are in the VC
 		MoveFlashlight();
+		UpdateFloodLights();
 	}
 
 	sprintf(buffer, "End time(0) %lld", time(0)); 

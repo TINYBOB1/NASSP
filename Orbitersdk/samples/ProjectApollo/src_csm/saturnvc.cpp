@@ -800,6 +800,28 @@ bool Saturn::clbkLoadVC (int id)
 	flashlight->SetVisibility(LightEmitter::VIS_COCKPIT);
 	flashlight->Activate(flashlightOn);
 
+	//FloodLight Panel 5
+	DelLightEmitter(floodLight_P5);
+	floodLight_P5 = (::PointLight*)AddPointLight(floodLightPos_P5, 3, 0, 0, 3, floodLightColor_P5, floodLightColor_P5, floodLightColor2_P5);
+	floodLight_P5->SetVisibility(LightEmitter::VIS_COCKPIT);
+	floodLight_P5->Activate(true);
+	floodLight_P5->SetIntensity(1);
+
+	//FloodLight Panel 8
+	DelLightEmitter(floodLight_P8);
+	floodLight_P8 = (::PointLight*)AddPointLight(floodLightPos_P8, 3, 0, 0, 3, floodLightColor_P8, floodLightColor_P8, floodLightColor2_P8);
+	floodLight_P8->SetVisibility(LightEmitter::VIS_COCKPIT);
+	floodLight_P8->Activate(true);
+	floodLight_P8->SetIntensity(1);
+
+	//FloodLight Panel 100(LEB)
+	DelLightEmitter(floodLight_P100);
+	floodLight_P100 = (::PointLight*)AddPointLight(floodLightPos_P100, 3, 0, 0, 3, floodLightColor_P100, floodLightColor_P100, floodLightColor2_P100);
+	floodLight_P100->SetVisibility(LightEmitter::VIS_COCKPIT);
+	floodLight_P100->Activate(true);
+	floodLight_P100->SetIntensity(1);
+
+
 	switch (id) {
 
 	case SATVIEW_LEFTSEAT:
@@ -1790,8 +1812,13 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 		// Dimmable lights //
 		/////////////////////
 
+		// First Darken All Lights
+		double floodRotaryValue = FloodRotarySwitch.GetOutput();
+		floodRotaryValue = 0.0;
+
 		// Flood Lights Panel 8
-		SetVCLighting(vcidx, FloodLights_P8, MAT_LIGHT, FloodRotarySwitch.GetOutput(), NUM_ELEMENTS(FloodLights_P8));
+		SetVCLighting(vcidx, FloodLights_P8, MAT_LIGHT, floodRotaryValue, NUM_ELEMENTS(FloodLights_P8));
+		floodLight_P8->SetIntensity(FloodRotarySwitch.GetOutput()*1.5);
 
 		// CMVC Ordeal Lighting Switch
 		SetVCLighting(vcidx, IntegralLights_CMVC_Ordeal, MAT_EMISSION, ordeal.LightingPower(), NUM_ELEMENTS(IntegralLights_CMVC_Ordeal));
@@ -1799,22 +1826,23 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 
 		// Integral Lights Panel 8
 		SetVCLighting(vcidx, IntegralLights_P8, MAT_EMISSION, IntegralRotarySwitch.GetOutput(), NUM_ELEMENTS(IntegralLights_P8));
-		SetVCLighting(vcidx, IntergralLights_P8_NTex, MAT_LIGHT, (IntegralRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, NUM_ELEMENTS(IntergralLights_P8_NTex));
+		SetVCLighting(vcidx, IntergralLights_P8_NTex, MAT_LIGHT, (IntegralRotarySwitch.GetOutput() + floodRotaryValue) / 2.0, NUM_ELEMENTS(IntergralLights_P8_NTex));
 
 		// External meshes
-		SetVCLighting(seatsunfoldedidx, CMVCSeatsUnFolded, MAT_LIGHT, FloodRotarySwitch.GetOutput(), NUM_ELEMENTS(CMVCSeatsUnFolded));
-		SetVCLighting(seatsfoldedidx, CMVCSeatsFolded, MAT_LIGHT, FloodRotarySwitch.GetOutput(), NUM_ELEMENTS(CMVCSeatsFolded));
-		SetVCLighting(coascdridx, CMVC_COAS_CDR, MAT_LIGHT, FloodRotarySwitch.GetOutput(), NUM_ELEMENTS(CMVC_COAS_CDR));
+		SetVCLighting(seatsunfoldedidx, CMVCSeatsUnFolded, MAT_LIGHT, floodRotaryValue, NUM_ELEMENTS(CMVCSeatsUnFolded));
+		SetVCLighting(seatsfoldedidx, CMVCSeatsFolded, MAT_LIGHT, floodRotaryValue, NUM_ELEMENTS(CMVCSeatsFolded));
+		SetVCLighting(coascdridx, CMVC_COAS_CDR, MAT_LIGHT, floodRotaryValue, NUM_ELEMENTS(CMVC_COAS_CDR));
 
 		// Numerics Lights Panel 8
 //      SetVCLighting(vcidx,NumericLights_P8, MAT_LIGHT,NumericRotarySwitch.GetOutput(), NUM_ELEMENTS(NumericLights_P8));
-		SetVCLighting(vcidx, NumericLights_P8_NTex, MAT_LIGHT, (NumericRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, NUM_ELEMENTS(NumericLights_P8_NTex));
+		SetVCLighting(vcidx, NumericLights_P8_NTex, MAT_LIGHT, (NumericRotarySwitch.GetOutput() + floodRotaryValue) / 2.0, NUM_ELEMENTS(NumericLights_P8_NTex));
 
 		// Integral Lights Panel 5
 		SetVCLighting(vcidx, IntegralLights_P5, MAT_EMISSION, RightIntegralRotarySwitch.GetOutput(), NUM_ELEMENTS(IntegralLights_P5));
 
 		// Flood Lights Panel 5 *** NOT FUNCTIONALY YET ***
 //		SetVCLighting(vcidx, FloodLights_P5, MAT_LIGHT, RightFloodRotarySwitch.GetOutput(), NUM_ELEMENTS(FloodLights_P5));
+		floodLight_P5->SetIntensity(RightFloodRotarySwitch.GetOutput()*1.5);
 
 		// Integral Lights Panel 100
 		SetVCLighting(vcidx, IntegralLights_P100, MAT_EMISSION, Panel100IntegralRotarySwitch.GetOutput(), NUM_ELEMENTS(IntegralLights_P100));
@@ -1823,9 +1851,10 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 
 		//// Flood Lights Panel 100 *** NOT FUNCTIONALY YET ***
 //		SetVCLighting(vcidx, FloodLights_P100, MAT_LIGHT, Panel100FloodRotarySwitch.GetOutput(), NUM_ELEMENTS(FloodLights_P100));
+		floodLight_P100->SetIntensity(Panel100FloodRotarySwitch.GetOutput()*1.5);
 
 		// Numerics Lights Panel 100
-		SetVCLighting(vcidx, NumericLights_P100, MAT_LIGHT, (Panel100NumericRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, NUM_ELEMENTS(NumericLights_P100));
+		SetVCLighting(vcidx, NumericLights_P100, MAT_LIGHT, (Panel100NumericRotarySwitch.GetOutput() + floodRotaryValue) / 2.0, NUM_ELEMENTS(NumericLights_P100));
 
 		// DSKY and Caution & Warning Lights
 		std::vector<DWORD> DSKY_Lights;
@@ -1896,23 +1925,23 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 		 }
 
 		SetVCLighting(vcidx, &CW_Lights[0], MAT_LIGHT, 1, CW_Lights.size()); 	//Caution & Warning Lights
-		SetVCLighting(vcidx, &DSKY_Lights[0], MAT_LIGHT, (NumericRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, DSKY_Lights.size());
-		SetVCLighting(vcidx, &DSKY_LEB_Lights[0], MAT_LIGHT, (Panel100NumericRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, DSKY_LEB_Lights.size());
+		SetVCLighting(vcidx, &DSKY_Lights[0], MAT_LIGHT, (NumericRotarySwitch.GetOutput() + floodRotaryValue) / 2.0, DSKY_Lights.size());
+		SetVCLighting(vcidx, &DSKY_LEB_Lights[0], MAT_LIGHT, (Panel100NumericRotarySwitch.GetOutput() + floodRotaryValue) / 2.0, DSKY_LEB_Lights.size());
 
 /*
 		// LEB Conditional Lamps
 		if (Panel100NumericRotarySwitch.GetOutput()) {
 			if (cws.IsPowered() && cws.GetGNLampState() != 0) {
 				if (cws.GetGNLampState() == 2 || cws.GetGNPGNSAlarm()) {
-					SetVCLighting(vcidx, VC_MAT_LEB_ConditionLamp_PGNS, MAT_LIGHT, (Panel100NumericRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, 1);
+					SetVCLighting(vcidx, VC_MAT_LEB_ConditionLamp_PGNS, MAT_LIGHT, (Panel100NumericRotarySwitch.GetOutput() + floodRotaryValue) / 2.0, 1);
 				}
 
 				if (cws.GetGNLampState() == 2 || LightStates[CSM_CWS_CMC_LIGHT + 30 - CWS_LIGHTS_PER_PANEL]) {
-					SetVCLighting(vcidx, VC_MAT_LEB_ConditionLamp_CMC, MAT_LIGHT, (Panel100NumericRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, 1);
+					SetVCLighting(vcidx, VC_MAT_LEB_ConditionLamp_CMC, MAT_LIGHT, (Panel100NumericRotarySwitch.GetOutput() + floodRotaryValue) / 2.0, 1);
 				}
 
 				if (cws.GetGNLampState() == 2 || LightStates[CSM_CWS_ISS_LIGHT + 30 - CWS_LIGHTS_PER_PANEL]) {
-					SetVCLighting(vcidx, VC_MAT_LEB_ConditionLamp_ISS, MAT_LIGHT, (Panel100NumericRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, 1);
+					SetVCLighting(vcidx, VC_MAT_LEB_ConditionLamp_ISS, MAT_LIGHT, (Panel100NumericRotarySwitch.GetOutput() + floodRotaryValue) / 2.0, 1);
 				}
 			}
 		}
@@ -2019,6 +2048,9 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 
 	case AID_VC_CUE_CARDS_LIGHTING:
 	{
+		double floodRotaryValue = FloodRotarySwitch.GetOutput();
+		floodRotaryValue = 0.0;
+
 		//Get list of mesh indices
 		std::vector<UINT> indices;
 		CueCards.GetMeshIndexList(indices);
@@ -2027,7 +2059,7 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 
 		for (unsigned i = 0; i < indices.size(); i++)
 		{
-			SetVCLighting(indices[i], ccmat, MAT_LIGHT, FloodRotarySwitch.GetOutput(), 1);
+			SetVCLighting(indices[i], ccmat, MAT_LIGHT, floodRotaryValue, 1);
 		}
 
 		return true;
@@ -3436,91 +3468,91 @@ void Saturn::DefineVCAnimations()
 
 	MainPanelVC.AddSwitch(&RCSTempMeter);
 	RCSTempMeter.SetReference(NEEDLE_POS);
-	RCSTempMeter.SetRotationRange(RAD * 38.6);
+	RCSTempMeter.SetRotationRange(RAD * 39.1);
 	RCSTempMeter.DefineMeshGroup(VC_GRP_Needle_P2_01);
 
 	MainPanelVC.AddSwitch(&RCSHeliumPressMeter);
 	RCSHeliumPressMeter.SetReference(NEEDLE_POS);
-	RCSHeliumPressMeter.SetRotationRange(RAD * 38.4);
+	RCSHeliumPressMeter.SetRotationRange(RAD * 39.1);
 	RCSHeliumPressMeter.DefineMeshGroup(VC_GRP_Needle_P2_02);
 
 	MainPanelVC.AddSwitch(&RCSFuelPressMeter);
 	RCSFuelPressMeter.SetReference(NEEDLE_POS);
-	RCSFuelPressMeter.SetRotationRange(RAD * 39.5);
+	RCSFuelPressMeter.SetRotationRange(RAD * 39.1);
 	RCSFuelPressMeter.DefineMeshGroup(VC_GRP_Needle_P2_03);
 
 	MainPanelVC.AddSwitch(&RCSQuantityMeter);
 	RCSQuantityMeter.SetReference(NEEDLE_POS);
-	RCSQuantityMeter.SetRotationRange(RAD * 39.5);
+	RCSQuantityMeter.SetRotationRange(RAD * 39.1);
 	RCSQuantityMeter.DefineMeshGroup(VC_GRP_Needle_P2_04);
 
 	NEEDLE_POS = { 0.33136, 0.761097, 0.468935 };
 
 	MainPanelVC.AddSwitch(&H2Pressure1Meter);
 	H2Pressure1Meter.SetReference(NEEDLE_POS);
-	H2Pressure1Meter.SetRotationRange(RAD * 39.5);
+	H2Pressure1Meter.SetRotationRange(RAD * 38.58);
 	H2Pressure1Meter.DefineMeshGroup(VC_GRP_Needle_P2_05);
 
 	MainPanelVC.AddSwitch(&H2Pressure2Meter);
 	H2Pressure2Meter.SetReference(NEEDLE_POS);
-	H2Pressure2Meter.SetRotationRange(RAD * 39.5);
+	H2Pressure2Meter.SetRotationRange(RAD * 38.58);
 	H2Pressure2Meter.DefineMeshGroup(VC_GRP_Needle_P2_06);
 
 	MainPanelVC.AddSwitch(&O2Pressure1Meter);
 	O2Pressure1Meter.SetReference(NEEDLE_POS);
-	O2Pressure1Meter.SetRotationRange(RAD * 40.3);
+	O2Pressure1Meter.SetRotationRange(RAD * 38.58);
 	O2Pressure1Meter.DefineMeshGroup(VC_GRP_Needle_P2_07);
 
 	MainPanelVC.AddSwitch(&O2Pressure2Meter);
 	O2Pressure2Meter.SetReference(NEEDLE_POS);
-	O2Pressure2Meter.SetRotationRange(RAD * 40.3);
+	O2Pressure2Meter.SetRotationRange(RAD * 38.58);
 	O2Pressure2Meter.DefineMeshGroup(VC_GRP_Needle_P2_08);
 
 	MainPanelVC.AddSwitch(&H2Quantity1Meter);
 	H2Quantity1Meter.SetReference(NEEDLE_POS);
-	H2Quantity1Meter.SetRotationRange(RAD * 40.3);
+	H2Quantity1Meter.SetRotationRange(RAD * 38.58);
 	H2Quantity1Meter.DefineMeshGroup(VC_GRP_Needle_P2_09);
 
 	MainPanelVC.AddSwitch(&H2Quantity2Meter);
 	H2Quantity2Meter.SetReference(NEEDLE_POS);
-	H2Quantity2Meter.SetRotationRange(RAD * 40.3);
+	H2Quantity2Meter.SetRotationRange(RAD * 38.58);
 	H2Quantity2Meter.DefineMeshGroup(VC_GRP_Needle_P2_10);
 
 	MainPanelVC.AddSwitch(&O2Quantity1Meter);
 	O2Quantity1Meter.SetReference(NEEDLE_POS);
-	O2Quantity1Meter.SetRotationRange(RAD * 40.3);
+	O2Quantity1Meter.SetRotationRange(RAD * 38.58);
 	O2Quantity1Meter.DefineMeshGroup(VC_GRP_Needle_P2_11);
 
 	MainPanelVC.AddSwitch(&O2Quantity2Meter);
 	O2Quantity2Meter.SetReference(NEEDLE_POS);
-	O2Quantity2Meter.SetRotationRange(RAD * 40.3);
+	O2Quantity2Meter.SetRotationRange(RAD * 38.58);
 	O2Quantity2Meter.DefineMeshGroup(VC_GRP_Needle_P2_12);
 
 	NEEDLE_POS = { 0.347613, 0.603087, 0.415891 };
 
 	MainPanelVC.AddSwitch(&SuitTempMeter);
 	SuitTempMeter.SetReference(NEEDLE_POS);
-	SuitTempMeter.SetRotationRange(RAD * 40.2);
+	SuitTempMeter.SetRotationRange(RAD * 38.72);
 	SuitTempMeter.DefineMeshGroup(VC_GRP_Needle_P2_13);
 
 	MainPanelVC.AddSwitch(&CabinTempMeter);
 	CabinTempMeter.SetReference(NEEDLE_POS);
-	CabinTempMeter.SetRotationRange(RAD * 40.2);
+	CabinTempMeter.SetRotationRange(RAD * 38.72);
 	CabinTempMeter.DefineMeshGroup(VC_GRP_Needle_P2_14);
 
 	MainPanelVC.AddSwitch(&SuitPressMeter);
 	SuitPressMeter.SetReference(NEEDLE_POS);
-	SuitPressMeter.SetRotationRange(RAD * 37.5);
+	SuitPressMeter.SetRotationRange(RAD * 38.72);
 	SuitPressMeter.DefineMeshGroup(VC_GRP_Needle_P2_15);
 
 	MainPanelVC.AddSwitch(&CabinPressMeter);
 	CabinPressMeter.SetReference(NEEDLE_POS);
-	CabinPressMeter.SetRotationRange(RAD * 37.5);
+	CabinPressMeter.SetRotationRange(RAD * 38.72);
 	CabinPressMeter.DefineMeshGroup(VC_GRP_Needle_P2_16);
 
 	MainPanelVC.AddSwitch(&PartPressCO2Meter);
 	PartPressCO2Meter.SetReference(NEEDLE_POS);
-	PartPressCO2Meter.SetRotationRange(RAD * 38.7);
+	PartPressCO2Meter.SetRotationRange(RAD * 38.72);
 	PartPressCO2Meter.DefineMeshGroup(VC_GRP_Needle_P2_17);
 
 	NEEDLE_POS = { -0.2005, 0.9289, 0.4364 };
@@ -5280,6 +5312,21 @@ void Saturn::SetVCLighting(UINT meshidx, int material, int EmissionMode, double 
 		pCore->MeshMaterial(hMesh, material, EmissionMode, &value, true);
 #endif
 	}
+}
+
+void Saturn::UpdateFloodLights()
+{
+	GetCameraOffset(flashlightPos);
+	VECTOR3 ofs;
+	GetMeshOffset(vcidx, ofs); // First get or VC Offset
+
+	// Debug string for finding Camera and VC mesh Position
+	sprintf(oapiDebugString(), "%.3f  %.3f  %.3f ** %.3f  %.3f  %.3f ", flashlightPos.x, flashlightPos.y, flashlightPos.z, ofs.x, ofs.y, ofs.z );
+
+	// Set the Floodlights 
+	floodLight_P5->SetPosition(ofs + floodLightPos_P5);
+	floodLight_P8->SetPosition(ofs + floodLightPos_P8);
+	floodLight_P100->SetPosition(ofs + floodLightPos_P100);
 }
 
 void Saturn::MoveFlashlight()

@@ -145,34 +145,59 @@ void Saturn::SystemsInit() {
 	SpotLight = (ElectricLight *)Panelsdk.GetPointerByString("ELECTRIC:SPOTLIGHT");
 	RndzLight = (ElectricLight *)Panelsdk.GetPointerByString("ELECTRIC:RNDZLIGHT");
 
-
 	//
-	// O2 tanks.
-	//
-
-	O2Tanks[0] = (h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:O2TANK1");
-	O2Tanks[1] = (h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:O2TANK2");
-
-	O2TanksHeaters[0] = (Boiler *) Panelsdk.GetPointerByString("ELECTRIC:O2TANK1HEATER");
-	O2TanksHeaters[0]->WireTo(&CryogenicO2HTR1CB);
-	O2TanksHeaters[1] = (Boiler *) Panelsdk.GetPointerByString("ELECTRIC:O2TANK2HEATER");
-	O2TanksHeaters[1]->WireTo(&CryogenicO2HTR2CB);
-	O2TanksFans[0] = (Boiler *) Panelsdk.GetPointerByString("ELECTRIC:O2TANK1FAN");
-	O2TanksFans[1] = (Boiler *) Panelsdk.GetPointerByString("ELECTRIC:O2TANK2FAN");
-
-	//
-	// H2 tanks.
+	// EPS/Cryo devices
 	//
 
-	H2Tanks[0] = (h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:H2TANK1");
-	H2Tanks[1] = (h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:H2TANK2");
+	CryoFanMotorsTank1Feeder.WireToBuses(&CryogenicFanMotorsAC1ACB, &CryogenicFanMotorsAC1BCB, &CryogenicFanMotorsAC1CCB);
+	CryoFanMotorsTank2Feeder.WireToBuses(&CryogenicFanMotorsAC2ACB, &CryogenicFanMotorsAC2BCB, &CryogenicFanMotorsAC2CCB);
 
-	H2TanksHeaters[0] = (Boiler *) Panelsdk.GetPointerByString("ELECTRIC:H2TANK1HEATER");
-	H2TanksHeaters[0]->WireTo(&CryogenicH2HTR1CB);
-	H2TanksHeaters[1] = (Boiler *) Panelsdk.GetPointerByString("ELECTRIC:H2TANK2HEATER");
-	H2TanksHeaters[1]->WireTo(&CryogenicH2HTR2CB);
-	H2TanksFans[0] = (Boiler *) Panelsdk.GetPointerByString("ELECTRIC:H2TANK1FAN");
-	H2TanksFans[1] = (Boiler *) Panelsdk.GetPointerByString("ELECTRIC:H2TANK2FAN");
+	// H2 Tanks
+
+	H2Tanks[0] = (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:H2TANK1");
+	H2Tanks[1] = (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:H2TANK2");
+	H2TankHeaters[0] = (Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK1HEATER");
+	H2TankHeaters[0]->WireTo(&CryogenicH2HTR1CB);
+	H2TankHeaters[1] = (Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK2HEATER");
+	H2TankHeaters[1]->WireTo(&CryogenicH2HTR2CB);
+	H2TankFans[0] = (Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK1FAN");
+	H2TankFans[0]->WireTo(&CryoFanMotorsTank1Feeder);
+	H2TankFans[1] = (Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK2FAN");
+	H2TankFans[1]->WireTo(&CryoFanMotorsTank2Feeder);
+
+	H2CryoPressureSwitch.Init(this, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:H2TANK1"),
+		(h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:H2TANK2"),
+		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK1HEATER"),
+		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK2HEATER"),
+		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK1FAN"),
+		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK2FAN"),
+		&H2Heater1Switch, &H2Heater2Switch, &H2Fan1Switch, &H2Fan2Switch,
+		&MainBusAController, &MainBusBController,
+		225.0, 260.0);
+	
+	// O2 Tanks
+
+	O2Tanks[0] = (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:O2TANK1"); //Used by Apollo 13 accident code
+	O2Tanks[1] = (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:O2TANK2"); //Used by Apollo 13 accident code
+	O2TankHeaters[0] = (Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK1HEATER");
+	O2TankHeaters[0]->WireTo(&CryogenicO2HTR1CB);
+	O2TankHeaters[1] = (Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK2HEATER");
+	O2TankHeaters[1]->WireTo(&CryogenicO2HTR2CB);
+	O2TankFans[0] = (Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK1FAN");
+	O2TankFans[0]->WireTo(&CryoFanMotorsTank1Feeder);
+	O2TankFans[1] = (Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK2FAN");
+	O2TankFans[1]->WireTo(&CryoFanMotorsTank2Feeder);
+	
+	O2CryoPressureSwitch.Init(this, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:O2TANK1"),
+		(h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:O2TANK2"),
+		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK1HEATER"),
+		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK2HEATER"),
+		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK1FAN"),
+		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK2FAN"),
+		&O2Heater1Switch, &O2Heater2Switch, &O2Fan1Switch, &O2Fan2Switch,
+		&MainBusAController, &MainBusBController,
+		865.0, 935.0);
+
 
 	//
 	// Entry and landing batteries.
@@ -319,12 +344,16 @@ void Saturn::SystemsInit() {
 
 	GSEGlycolPump = (Pump*)Panelsdk.GetPointerByString("ELECTRIC:GSEGLYCOLPUMP");
 	GSERadiator = (h_Radiator*)Panelsdk.GetPointerByString("HYDRAULIC:GSERADIATOR");
+	GSECryoO2Dewar = (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:GSECRYOO2DEWAR");
+	GSECryoH2Dewar = (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:GSECRYOH2DEWAR");
 
 	//
 	// ECS devices
 	//
 
 	CSMCabin = (h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:CABIN");
+	CabinFan1Feeder.WireToBuses(&ECSCabinFanAC1ACircuitBraker, &ECSCabinFanAC1BCircuitBraker, &ECSCabinFanAC1CCircuitBraker);
+	CabinFan2Feeder.WireToBuses(&ECSCabinFanAC2ACircuitBraker, &ECSCabinFanAC2BCircuitBraker, &ECSCabinFanAC2CCircuitBraker);
 
 	PrimCabinHeatExchanger = (h_HeatExchanger *) Panelsdk.GetPointerByString("HYDRAULIC:PRIMCABINHEATEXCHANGER");
 	PrimSuitHeatExchanger = (h_HeatExchanger *) Panelsdk.GetPointerByString("HYDRAULIC:PRIMSUITHEATEXCHANGER");
@@ -338,7 +367,10 @@ void Saturn::SystemsInit() {
 	SecEcsRadiatorExchanger1 = (h_HeatExchanger *) Panelsdk.GetPointerByString("HYDRAULIC:SECECSRADIATOREXCHANGER1");
 	SecEcsRadiatorExchanger2 = (h_HeatExchanger *) Panelsdk.GetPointerByString("HYDRAULIC:SECECSRADIATOREXCHANGER2");
 
-	PrimGlycolPump = (Pump*)Panelsdk.GetPointerByString("ELECTRIC:PRIMGLYCOLPUMP");
+	PrimGlycolPump1 = (Pump *)Panelsdk.GetPointerByString("ELECTRIC:PRIMGLYCOLPUMP1");
+	PrimGlycolPump2 = (Pump *)Panelsdk.GetPointerByString("ELECTRIC:PRIMGLYCOLPUMP2");
+	GlycolPump1Feeder.WireToBuses(&ECSGlycolPumpsAc1ACircuitBraker, &ECSGlycolPumpsAc1BCircuitBraker, &ECSGlycolPumpsAc1CCircuitBraker);
+	GlycolPump2Feeder.WireToBuses(&ECSGlycolPumpsAc2ACircuitBraker, &ECSGlycolPumpsAc2BCircuitBraker, &ECSGlycolPumpsAc2CCircuitBraker);
 	
 	CabinHeater = (Boiler *) Panelsdk.GetPointerByString("ELECTRIC:CABINHEATER");
 	
@@ -351,6 +383,9 @@ void Saturn::SystemsInit() {
 	SuitCompressor1->WireTo(&SuitCompressor1Switch);
 	SuitCompressor2 = (AtmRegen *) Panelsdk.GetPointerByString("ELECTRIC:SUITCOMPRESSORCO2ABSORBER2");
 	SuitCompressor2->WireTo(&SuitCompressor2Switch);
+
+	SuitCompressor1Feeder.WireToBuses(&SuitCompressorsAc1ACircuitBraker, &SuitCompressorsAc1BCircuitBraker, &SuitCompressorsAc1CCircuitBraker);
+	SuitCompressor2Feeder.WireToBuses(&SuitCompressorsAc2ACircuitBraker, &SuitCompressorsAc2BCircuitBraker, &SuitCompressorsAc2CCircuitBraker);
 
 	eo = (e_object *) Panelsdk.GetPointerByString("ELECTRIC:SECGLYCOLPUMP");
 	eo->WireTo(&SecCoolantLoopPumpSwitch);
@@ -902,7 +937,7 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 
 			case SATSYSTEMS_PRELAUNCH:
 				//Switches off GSE Glycol pump when CSM pump enabled
-				if (PrimGlycolPump->pumping || MissionTime >= -900) {
+				if (PrimGlycolPump1->pumping || PrimGlycolPump2->pumping || MissionTime >= -900) {
 					GSEGlycolPump->SetPumpOff();
 				}
 				//	Should be triggered by the suit compressor, the Mission Time condition is just in case 
@@ -1020,6 +1055,16 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 					*(int*) Panelsdk.GetPointerByString("HYDRAULIC:SECEVAPGSEHEATEXCHANGER:PUMP") = SP_PUMP_OFF;
 					*(int*) Panelsdk.GetPointerByString("ELECTRIC:GSECHILLER:PUMP") = SP_PUMP_OFF;
 
+					//Close GSE dewars
+					GSECryoO2Dewar->OUT_valve.Close();
+					GSECryoH2Dewar->OUT_valve.Close();
+
+					// Close Service Module GSE Cryogenic Valves
+					O2Tanks[0]->IN_valve.Close();
+					O2Tanks[1]->IN_valve.Close();
+					H2Tanks[0]->IN_valve.Close();
+					H2Tanks[1]->IN_valve.Close();
+
 					// Next state
 					systemsState = SATSYSTEMS_READYTOLAUNCH;
 					lastSystemsMissionTime = MissionTime; 
@@ -1107,6 +1152,20 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 //------------------------------------------------------------------------------------
 // Various debug prints
 //------------------------------------------------------------------------------------
+
+// GSE Cryo Debug Lines
+	/*
+	double *GSEO2CryoPress = (double *)Panelsdk.GetPointerByString("HYDRAULIC:GSECRYOO2DEWAR:PRESS");
+	double *GSEO2CryoTemp = (double *)Panelsdk.GetPointerByString("HYDRAULIC:GSECRYOO2DEWAR:TEMP");
+	double *O2Tank1Temp = (double *)Panelsdk.GetPointerByString("HYDRAULIC:O2TANK1:TEMP");
+	double *O2Tank2Temp = (double *)Panelsdk.GetPointerByString("HYDRAULIC:O2TANK2:TEMP");
+	double *GSEH2CryoPress = (double *)Panelsdk.GetPointerByString("HYDRAULIC:GSECRYOH2DEWAR:PRESS");
+	double *GSEH2CryoTemp = (double *)Panelsdk.GetPointerByString("HYDRAULIC:GSECRYOH2DEWAR:TEMP");
+	double *H2Tank1Temp = (double *)Panelsdk.GetPointerByString("HYDRAULIC:H2TANK1:TEMP");
+	double *H2Tank2Temp = (double *)Panelsdk.GetPointerByString("HYDRAULIC:H2TANK2:TEMP");
+	//sprintf(oapiDebugString(), "GSEPress: %.3f GSETemp: %.3f O2T1Temp: %.3f O2T2Temp: %.3f", *GSEO2CryoPress *PSI, KelvinToFahrenheit(*GSEO2CryoTemp), KelvinToFahrenheit(*O2Tank1Temp), KelvinToFahrenheit(*O2Tank2Temp));
+	//sprintf(oapiDebugString(), "GSEPress: %.3f GSETemp: %.3f H2T1Temp: %.3f H2T2Temp: %.3f", *GSEH2CryoPress *PSI, KelvinToFahrenheit(*GSEH2CryoTemp), KelvinToFahrenheit(*H2Tank1Temp), KelvinToFahrenheit(*H2Tank2Temp));
+	*/
 
 //	FC Nitrogen system.
 	//h_Tank* pHeader = (h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:N2FUELCELL1HEADERTANK");
@@ -1778,6 +1837,8 @@ void Saturn::SystemsInternalTimestep(double simdt)
 		MissionTimer306Display.SystemTimestep(tFactor);
 		EventTimerDisplay.SystemTimestep(tFactor);
 		EventTimer306Display.SystemTimestep(tFactor);
+		H2CryoPressureSwitch.SystemTimestep(tFactor);
+		O2CryoPressureSwitch.SystemTimestep(tFactor);
 
 		simdt -= tFactor;
 		tFactor = __min(mintFactor, simdt);
@@ -2489,23 +2550,21 @@ void Saturn::CabinFansSystemTimestep()
 
 	if (CabinFansActive()) {
 		if (CabinFan1Active()) {
-			ACBus1.DrawPower(19.3);
+			CabinFan1Feeder.DrawPower(19.3);
 		}
 
 		if (CabinFan2Active()) {
-			ACBus2.DrawPower(19.3);
+			CabinFan2Feeder.DrawPower(19.3);
 		}
 
 		PrimCabinHeatExchanger->SetPumpAuto();
 		SecCabinHeatExchanger->SetPumpAuto();
-		CabinHeater->SetPumpAuto(); 
 
 		CabinFanSound();
 	} 
 	else {
 		PrimCabinHeatExchanger->SetPumpOff();
 		SecCabinHeatExchanger->SetPumpOff();
-		CabinHeater->SetPumpOff(); 
 
 		StopCabinFanSound();
 	}
@@ -2612,14 +2671,14 @@ void Saturn::CheckSMSystemsState()
 		FuelCellHeaters[2]->WireTo(NULL);
 
 		// Cryo heaters/fans
-		O2TanksHeaters[0]->WireTo(NULL);
-		O2TanksHeaters[1]->WireTo(NULL);
-		H2TanksHeaters[0]->WireTo(NULL);
-		H2TanksHeaters[1]->WireTo(NULL);
-		O2TanksFans[0]->WireTo(NULL);
-		O2TanksFans[1]->WireTo(NULL);
-		H2TanksFans[0]->WireTo(NULL);
-		H2TanksFans[1]->WireTo(NULL);
+		O2TankHeaters[0]->WireTo(NULL);
+		O2TankHeaters[1]->WireTo(NULL);
+		H2TankHeaters[0]->WireTo(NULL);
+		H2TankHeaters[1]->WireTo(NULL);
+		O2TankFans[0]->WireTo(NULL);
+		O2TankFans[1]->WireTo(NULL);
+		H2TankFans[0]->WireTo(NULL);
+		H2TankFans[1]->WireTo(NULL);
 		
 		// SPS Line Heaters
 		SPSFuelSumpTankHeaterA->WireTo(NULL);
@@ -2763,11 +2822,7 @@ bool Saturn::CabinFansActive()
 bool Saturn::CabinFan1Active()
 
 {
-	//
-	// For now, if any power breaker is enabled, then run the fans.
-	//
-
-	bool PowerFan1 = (ECSCabinFanAC1ACircuitBraker.Voltage() > SP_MIN_ACVOLTAGE) || (ECSCabinFanAC1BCircuitBraker.Voltage() > SP_MIN_ACVOLTAGE) || (ECSCabinFanAC1CCircuitBraker.Voltage() > SP_MIN_ACVOLTAGE);
+	bool PowerFan1 = (CabinFan1Feeder.Voltage() > SP_MIN_ACVOLTAGE);
 
 	return (CabinFan1Switch.IsUp() && PowerFan1);
 }
@@ -2775,11 +2830,7 @@ bool Saturn::CabinFan1Active()
 bool Saturn::CabinFan2Active()
 
 {
-	//
-	// For now, if any power breaker is enabled, then run the fans.
-	//
-
-	bool PowerFan2 = (ECSCabinFanAC2ACircuitBraker.Voltage() > SP_MIN_ACVOLTAGE) || (ECSCabinFanAC2BCircuitBraker.Voltage() > SP_MIN_ACVOLTAGE) || (ECSCabinFanAC2CCircuitBraker.Voltage() > SP_MIN_ACVOLTAGE);
+	bool PowerFan2 = (CabinFan2Feeder.Voltage() > SP_MIN_ACVOLTAGE);
 
 	return (CabinFan2Switch.IsUp() && PowerFan2);
 }

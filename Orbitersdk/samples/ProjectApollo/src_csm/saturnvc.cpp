@@ -1097,7 +1097,7 @@ void Saturn::RegisterActiveAreas() {
 	oapiVCSetAreaClickmode_Spherical(AID_VC_Altimeter_Cover, AltimeterLocation + ofs, 0.05);
 
 	// Ordeal Visibility
-	const VECTOR3 OrdealLocation = { -0.946135, 1.12302, -0.112392 };
+	const VECTOR3 OrdealLocation = { -1.12147, 0.990209, -0.166168 };
 	oapiVCRegisterArea(AID_VC_Ordeal_Stowed, PANEL_REDRAW_NEVER, PANEL_MOUSE_LBDOWN);
 	oapiVCSetAreaClickmode_Spherical(AID_VC_Ordeal_Stowed, OrdealLocation + ofs, 0.05);
 
@@ -2689,8 +2689,59 @@ void Saturn::DefineVCAnimations()
 	AddAnimationComponent(altimeterCoverAnim, 0.8, 0.8, &altimeterCoverMesh5); // Translation
 	AddAnimationComponent(altimeterCoverAnim, 0.8, 1.0, &altimeterCoverMesh6); // Translation
 
-	/// END TEST by JORDAN
 
+	// Ordeal Animation
+	static UINT ordealMeshGrp[12] = { 
+		VC_GRP_Screws_Panel13,
+		VC_GRP_Group_78_OrdealLighting,
+		VC_GRP_Group_78,
+		VC_GRP_ORDEAL_Rot,
+		VC_GRP_SwitchGuard_P13,
+		VC_GRP_SwitchHolder_P13,
+		VC_GRP_Sw_P13_01,
+		VC_GRP_Sw_P13_02,
+		VC_GRP_Sw_P13_03,
+		VC_GRP_Sw_P13_04,
+		VC_GRP_Sw_P13_05,
+		VC_GRP_Sw_P13_06
+};
+
+	static MGROUP_ROTATE ordealMeshGrp01(0, ordealMeshGrp, 12, _V( -0.931150,  0.988850, -0.002250), _V(0.387345, -0.375881,  0.84183), (float)(45.0 * RAD));
+	static MGROUP_ROTATE ordealMeshGrp02(0, ordealMeshGrp, 12, _V( -0.931150,  0.988850, -0.002250), _V(0.746545,  0.663823, -0.04483), (float)(-25.0 * RAD));
+
+	static MGROUP_TRANSLATE ordealMeshGrp03(0, ordealMeshGrp, 12, _V( 0.048105, 0.046687,-0.002054));
+	static MGROUP_TRANSLATE ordealMeshGrp04(0, ordealMeshGrp, 12, _V( 0.045540,-0.070472,-0.002001));
+	static MGROUP_TRANSLATE ordealMeshGrp05(0, ordealMeshGrp, 12, _V(-0.093769,-0.111988, 0.011892));
+	static MGROUP_TRANSLATE ordealMeshGrp06(0, ordealMeshGrp, 12, _V(-0.057720,-0.104968, 0.016579));
+	static MGROUP_TRANSLATE ordealMeshGrp07(0, ordealMeshGrp, 12, _V(-0.045257,-0.111645, 0.015972));
+	static MGROUP_TRANSLATE ordealMeshGrp08(0, ordealMeshGrp, 12, _V(-0.031742,-0.116623, 0.012001));
+	static MGROUP_TRANSLATE ordealMeshGrp09(0, ordealMeshGrp, 12, _V(-0.009214,-0.120099, 0.007878));
+	static MGROUP_TRANSLATE ordealMeshGrp10(0, ordealMeshGrp, 12, _V( 0.002824,-0.119671, 0.006403));
+	static MGROUP_TRANSLATE ordealMeshGrp11(0, ordealMeshGrp, 12, _V( 0.018193,-0.117666, 0.007002));
+	static MGROUP_TRANSLATE ordealMeshGrp12(0, ordealMeshGrp, 12, _V( 0.015888,-0.117059, 0.005107));
+	static MGROUP_TRANSLATE ordealMeshGrp13(0, ordealMeshGrp, 12, _V( 0.016092,-0.117294, 0.000250));
+	static MGROUP_TRANSLATE ordealMeshGrp14(0, ordealMeshGrp, 12, _V(-0.031066,-0.109332, 0.006414));
+	static MGROUP_TRANSLATE ordealMeshGrp15(0, ordealMeshGrp, 12, _V(-0.108063,-0.024326, 0.003564));
+
+	ordealAnim = CreateAnimation(0.0);
+	AddAnimationComponent(ordealAnim, 0.08, 0.23, &ordealMeshGrp01); // Rotation
+	AddAnimationComponent(ordealAnim, 0.08, 0.31, &ordealMeshGrp02); // Rotation
+
+	AddAnimationComponent(ordealAnim, 0.00, 0.08, &ordealMeshGrp03); // Translation
+	AddAnimationComponent(ordealAnim, 0.08, 0.15, &ordealMeshGrp04); // Translation
+	AddAnimationComponent(ordealAnim, 0.15, 0.23, &ordealMeshGrp05); // Translation
+	AddAnimationComponent(ordealAnim, 0.23, 0.31, &ordealMeshGrp06); // Translation
+	AddAnimationComponent(ordealAnim, 0.31, 0.38, &ordealMeshGrp07); // Translation
+	AddAnimationComponent(ordealAnim, 0.38, 0.46, &ordealMeshGrp08); // Translation
+	AddAnimationComponent(ordealAnim, 0.46, 0.54, &ordealMeshGrp09); // Translation
+	AddAnimationComponent(ordealAnim, 0.54, 0.62, &ordealMeshGrp10); // Translation
+	AddAnimationComponent(ordealAnim, 0.62, 0.69, &ordealMeshGrp11); // Translation
+	AddAnimationComponent(ordealAnim, 0.69, 0.77, &ordealMeshGrp12); // Translation
+	AddAnimationComponent(ordealAnim, 0.77, 0.85, &ordealMeshGrp13); // Translation
+	AddAnimationComponent(ordealAnim, 0.85, 0.92, &ordealMeshGrp14); // Translation
+	AddAnimationComponent(ordealAnim, 0.92, 1.00, &ordealMeshGrp15); // Translation
+
+	/// END TEST by JORDAN
 
 	// Panel 1
 
@@ -3468,91 +3519,91 @@ void Saturn::DefineVCAnimations()
 
 	MainPanelVC.AddSwitch(&RCSTempMeter);
 	RCSTempMeter.SetReference(NEEDLE_POS);
-	RCSTempMeter.SetRotationRange(RAD * 39.1);
+	RCSTempMeter.SetRotationRange(RAD * 38.67);
 	RCSTempMeter.DefineMeshGroup(VC_GRP_Needle_P2_01);
 
 	MainPanelVC.AddSwitch(&RCSHeliumPressMeter);
 	RCSHeliumPressMeter.SetReference(NEEDLE_POS);
-	RCSHeliumPressMeter.SetRotationRange(RAD * 39.1);
+	RCSHeliumPressMeter.SetRotationRange(RAD * 38.67);
 	RCSHeliumPressMeter.DefineMeshGroup(VC_GRP_Needle_P2_02);
 
 	MainPanelVC.AddSwitch(&RCSFuelPressMeter);
 	RCSFuelPressMeter.SetReference(NEEDLE_POS);
-	RCSFuelPressMeter.SetRotationRange(RAD * 39.1);
+	RCSFuelPressMeter.SetRotationRange(RAD * 38.67);
 	RCSFuelPressMeter.DefineMeshGroup(VC_GRP_Needle_P2_03);
 
 	MainPanelVC.AddSwitch(&RCSQuantityMeter);
 	RCSQuantityMeter.SetReference(NEEDLE_POS);
-	RCSQuantityMeter.SetRotationRange(RAD * 39.1);
+	RCSQuantityMeter.SetRotationRange(RAD * 38.67);
 	RCSQuantityMeter.DefineMeshGroup(VC_GRP_Needle_P2_04);
 
 	NEEDLE_POS = { 0.33136, 0.761097, 0.468935 };
 
 	MainPanelVC.AddSwitch(&H2Pressure1Meter);
 	H2Pressure1Meter.SetReference(NEEDLE_POS);
-	H2Pressure1Meter.SetRotationRange(RAD * 38.58);
+	H2Pressure1Meter.SetRotationRange(RAD * 38.67);
 	H2Pressure1Meter.DefineMeshGroup(VC_GRP_Needle_P2_05);
 
 	MainPanelVC.AddSwitch(&H2Pressure2Meter);
 	H2Pressure2Meter.SetReference(NEEDLE_POS);
-	H2Pressure2Meter.SetRotationRange(RAD * 38.58);
+	H2Pressure2Meter.SetRotationRange(RAD * 38.67);
 	H2Pressure2Meter.DefineMeshGroup(VC_GRP_Needle_P2_06);
 
 	MainPanelVC.AddSwitch(&O2Pressure1Meter);
 	O2Pressure1Meter.SetReference(NEEDLE_POS);
-	O2Pressure1Meter.SetRotationRange(RAD * 38.58);
+	O2Pressure1Meter.SetRotationRange(RAD * 38.67);
 	O2Pressure1Meter.DefineMeshGroup(VC_GRP_Needle_P2_07);
 
 	MainPanelVC.AddSwitch(&O2Pressure2Meter);
 	O2Pressure2Meter.SetReference(NEEDLE_POS);
-	O2Pressure2Meter.SetRotationRange(RAD * 38.58);
+	O2Pressure2Meter.SetRotationRange(RAD * 38.67);
 	O2Pressure2Meter.DefineMeshGroup(VC_GRP_Needle_P2_08);
 
 	MainPanelVC.AddSwitch(&H2Quantity1Meter);
 	H2Quantity1Meter.SetReference(NEEDLE_POS);
-	H2Quantity1Meter.SetRotationRange(RAD * 38.58);
+	H2Quantity1Meter.SetRotationRange(RAD * 38.67);
 	H2Quantity1Meter.DefineMeshGroup(VC_GRP_Needle_P2_09);
 
 	MainPanelVC.AddSwitch(&H2Quantity2Meter);
 	H2Quantity2Meter.SetReference(NEEDLE_POS);
-	H2Quantity2Meter.SetRotationRange(RAD * 38.58);
+	H2Quantity2Meter.SetRotationRange(RAD * 38.67);
 	H2Quantity2Meter.DefineMeshGroup(VC_GRP_Needle_P2_10);
 
 	MainPanelVC.AddSwitch(&O2Quantity1Meter);
 	O2Quantity1Meter.SetReference(NEEDLE_POS);
-	O2Quantity1Meter.SetRotationRange(RAD * 38.58);
+	O2Quantity1Meter.SetRotationRange(RAD * 38.67);
 	O2Quantity1Meter.DefineMeshGroup(VC_GRP_Needle_P2_11);
 
 	MainPanelVC.AddSwitch(&O2Quantity2Meter);
 	O2Quantity2Meter.SetReference(NEEDLE_POS);
-	O2Quantity2Meter.SetRotationRange(RAD * 38.58);
+	O2Quantity2Meter.SetRotationRange(RAD * 38.67);
 	O2Quantity2Meter.DefineMeshGroup(VC_GRP_Needle_P2_12);
 
 	NEEDLE_POS = { 0.347613, 0.603087, 0.415891 };
 
 	MainPanelVC.AddSwitch(&SuitTempMeter);
 	SuitTempMeter.SetReference(NEEDLE_POS);
-	SuitTempMeter.SetRotationRange(RAD * 38.72);
+	SuitTempMeter.SetRotationRange(RAD * 38.67);
 	SuitTempMeter.DefineMeshGroup(VC_GRP_Needle_P2_13);
 
 	MainPanelVC.AddSwitch(&CabinTempMeter);
 	CabinTempMeter.SetReference(NEEDLE_POS);
-	CabinTempMeter.SetRotationRange(RAD * 38.72);
+	CabinTempMeter.SetRotationRange(RAD * 38.67);
 	CabinTempMeter.DefineMeshGroup(VC_GRP_Needle_P2_14);
 
 	MainPanelVC.AddSwitch(&SuitPressMeter);
 	SuitPressMeter.SetReference(NEEDLE_POS);
-	SuitPressMeter.SetRotationRange(RAD * 38.72);
+	SuitPressMeter.SetRotationRange(RAD * 38.67);
 	SuitPressMeter.DefineMeshGroup(VC_GRP_Needle_P2_15);
 
 	MainPanelVC.AddSwitch(&CabinPressMeter);
 	CabinPressMeter.SetReference(NEEDLE_POS);
-	CabinPressMeter.SetRotationRange(RAD * 38.72);
+	CabinPressMeter.SetRotationRange(RAD * 38.67);
 	CabinPressMeter.DefineMeshGroup(VC_GRP_Needle_P2_16);
 
 	MainPanelVC.AddSwitch(&PartPressCO2Meter);
 	PartPressCO2Meter.SetReference(NEEDLE_POS);
-	PartPressCO2Meter.SetRotationRange(RAD * 38.72);
+	PartPressCO2Meter.SetRotationRange(RAD * 38.67);
 	PartPressCO2Meter.DefineMeshGroup(VC_GRP_Needle_P2_17);
 
 	NEEDLE_POS = { -0.2005, 0.9289, 0.4364 };
@@ -3973,42 +4024,42 @@ void Saturn::DefineVCAnimations()
 
 	MainPanelVC.AddSwitch(&SPSTempMeter);
 	SPSTempMeter.SetReference(NEEDLE_POS);
-	SPSTempMeter.SetRotationRange(RAD * 39.5);
+	SPSTempMeter.SetRotationRange(RAD * 38.67);
 	SPSTempMeter.DefineMeshGroup(VC_GRP_Needle_P3_01);
 
 	MainPanelVC.AddSwitch(&SPSHeliumNitrogenPressMeter);
 	SPSHeliumNitrogenPressMeter.SetReference(NEEDLE_POS);
-	SPSHeliumNitrogenPressMeter.SetRotationRange(RAD * 39.5);
+	SPSHeliumNitrogenPressMeter.SetRotationRange(RAD * 38.67);
 	SPSHeliumNitrogenPressMeter.DefineMeshGroup(VC_GRP_Needle_P3_02);
 
 	MainPanelVC.AddSwitch(&SPSFuelPressMeter);
 	SPSFuelPressMeter.SetReference(NEEDLE_POS);
-	SPSFuelPressMeter.SetRotationRange(RAD * 39.5);
+	SPSFuelPressMeter.SetRotationRange(RAD * 38.67);
 	SPSFuelPressMeter.DefineMeshGroup(VC_GRP_Needle_P3_03);
 
 	MainPanelVC.AddSwitch(&SPSOxidPressMeter);
 	SPSOxidPressMeter.SetReference(NEEDLE_POS);
-	SPSOxidPressMeter.SetRotationRange(RAD * 39.5);
+	SPSOxidPressMeter.SetRotationRange(RAD * 38.67);
 	SPSOxidPressMeter.DefineMeshGroup(VC_GRP_Needle_P3_04);
 
 	MainPanelVC.AddSwitch(&FuelCellH2FlowMeter);
 	FuelCellH2FlowMeter.SetReference(NEEDLE_POS);
-	FuelCellH2FlowMeter.SetRotationRange(RAD * 40.3);
+	FuelCellH2FlowMeter.SetRotationRange(RAD * 38.67);
 	FuelCellH2FlowMeter.DefineMeshGroup(VC_GRP_Needle_P3_05);
 
 	MainPanelVC.AddSwitch(&FuelCellO2FlowMeter);
 	FuelCellO2FlowMeter.SetReference(NEEDLE_POS);
-	FuelCellO2FlowMeter.SetRotationRange(RAD * 40.3);
+	FuelCellO2FlowMeter.SetRotationRange(RAD * 38.67);
 	FuelCellO2FlowMeter.DefineMeshGroup(VC_GRP_Needle_P3_06);
 
 	MainPanelVC.AddSwitch(&FuelCellTempMeter);
 	FuelCellTempMeter.SetReference(NEEDLE_POS);
-	FuelCellTempMeter.SetRotationRange(RAD * 40.7);
+	FuelCellTempMeter.SetRotationRange(RAD * 38.67);
 	FuelCellTempMeter.DefineMeshGroup(VC_GRP_Needle_P3_07);
 
 	MainPanelVC.AddSwitch(&FuelCellCondenserTempMeter);
 	FuelCellCondenserTempMeter.SetReference(NEEDLE_POS);
-	FuelCellCondenserTempMeter.SetRotationRange(RAD * 40.7);
+	FuelCellCondenserTempMeter.SetRotationRange(RAD * 38.67);
 	FuelCellCondenserTempMeter.DefineMeshGroup(VC_GRP_Needle_P3_08);
 
 	NEEDLE_POS = { 0.8420, 0.6010, 0.3265 };
@@ -5316,12 +5367,13 @@ void Saturn::SetVCLighting(UINT meshidx, int material, int EmissionMode, double 
 
 void Saturn::UpdateFloodLights()
 {
-	GetCameraOffset(flashlightPos);
+	VECTOR3 camPos;
 	VECTOR3 ofs;
+	GetCameraOffset(camPos);
 	GetMeshOffset(vcidx, ofs); // First get or VC Offset
 
 	// Debug string for finding Camera and VC mesh Position
-	sprintf(oapiDebugString(), "%.3f  %.3f  %.3f ** %.3f  %.3f  %.3f ", flashlightPos.x, flashlightPos.y, flashlightPos.z, ofs.x, ofs.y, ofs.z );
+	//sprintf(oapiDebugString(), "%.3f  %.3f  %.3f ** %.3f  %.3f  %.3f ", camPos.x, camPos.y, camPos.z, ofs.x, ofs.y, ofs.z );
 
 	// Set the Floodlights 
 	floodLight_P5->SetPosition(ofs + floodLightPos_P5);

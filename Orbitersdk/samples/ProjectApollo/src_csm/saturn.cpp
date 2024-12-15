@@ -255,7 +255,7 @@ Saturn::Saturn(OBJHANDLE hObj, int fmodel) : ProjectApolloConnectorVessel (hObj,
 	O2SupplyManifPressSensor("O2-Supply-Manif-Press-Sensor", 0.0, 150.0),
 	ECSSecTransducersFeeder("ECS-Sec-Transducers-Feeder", Panelsdk),
 	SecGlyPumpOutPressSensor("Sec-Gly-Pump-Out-Press-Sensor", 0.0, 60.0),
-	SecEvapOutLiqTempSensor("Sec-Eva-pOut-Liq-Temp-Sensor", 25.0, 75.0),
+	SecEvapOutLiqTempSensor("Sec-Evap-Out-Liq-Temp-Sensor", 25.0, 75.0),
 	SecGlycolAccumQtySensor("Sec-Glycol-Accum-Qty-Sensor", 0.0, 1.0, 10000.0),
 	SecEvapOutSteamPressSensor("Sec-Evap-Out-Steam-Press-Sensor", 0.05, 0.25),
 	//PriGlycolFlowRateSensor("Pri-Glycol-Flow-Rate-Sensor", 150.0, 300.0)
@@ -1320,6 +1320,22 @@ void Saturn::SetAnimations(double simdt)
 		SetAnimation (altimeterCoverAnim, altimeterCoverState.pos);
 	}
 
+	if (ordealState.action == AnimState::CLOSING || ordealState.action == AnimState::OPENING) {
+		double speed = 3.0; // Anim length in Seconds
+		double dp = simdt / speed;
+		if (ordealState.action == AnimState::CLOSING) {
+			if (ordealState.pos > 0.0)
+				ordealState.pos = max (0.0, ordealState.pos-dp);
+			else
+				ordealState.action = AnimState::CLOSED;
+		} else { // Stowing
+			if (ordealState.pos < 1.0)
+				ordealState.pos = min (1.0, ordealState.pos+dp);
+			else
+				ordealState.action = AnimState::OPEN; //Stowed
+		}
+		SetAnimation (ordealAnim, ordealState.pos);
+	}
 	// By Jordan End
 }
 
@@ -2335,6 +2351,9 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 	}
 	else if (!strnicmp (line, "ORDEALSTOWED", 12)) {
 		sscanf (line + 12, "%i", &ordealStowed);
+		if (ordealStowed) {
+			ordealState.pos = 1.0;
+		}
 	}
 	else if (!strnicmp(line, "CHKVAR_", 7)) {
 		for (int i = 0; i < 16; i++) {

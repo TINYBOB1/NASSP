@@ -1382,7 +1382,7 @@ void Saturn::SetPanel382Cover() {
 
 
 void Saturn::SetOrdealMesh() {
-	GROUPEDITSPEC ordealMesh;
+/*	GROUPEDITSPEC ordealMesh;
 	ordealMesh.flags = GRPEDIT_SETUSERFLAG;
 	std::vector<DWORD> ordealMeshParts;
 	ordealMeshParts.push_back(VC_GRP_Screws_Panel13);
@@ -1409,7 +1409,12 @@ void Saturn::SetOrdealMesh() {
 			oapiEditMeshGroup(vcmesh, ordealMeshParts[i], &ordealMesh);
 		}
 	}
-
+*/
+	if (ordealStowed) {
+		ordealState.action = AnimState::OPENING;
+	} else {
+		ordealState.action = AnimState::CLOSING;
+	}
 }
 
 void Saturn::SetCOASMesh() {

@@ -166,3 +166,6 @@ XRSound/
 /zlibd.ilk
 /zlibd.lib
 /zlibd.pdb
+/*.dll
+/CMakeLists.txt
+/LICENSE

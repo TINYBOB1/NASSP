@@ -12972,6 +12972,9 @@ void RTCC::PMXSPT(std::string source, int n)
 	case 302:
 		message.push_back("SKELETON FLIGHT PLAN TABLE NOT AVAILABLE");
 		break;
+	case 303:
+		message.push_back("IGNITION ALGORITHM FAILED - PROCESSING TERMINATED");
+		break;
 	default:
 		return;
 	}
@@ -14654,13 +14657,19 @@ int RTCC::EMDSPACE(int queid, int option, double val, double incl, double ascnod
 				sprintf(EZSPACE.REF2, "LUNAR");
 				mu = OrbMech::mu_Moon;
 			}
-			
+			//Get weight, area and K-factor
 			PLAWDTInput pin;
 			PLAWDTOutput pout;
+
 			pin.T_UP = sv.GMT;
 			pin.TableCode = EZETVMED.SpaceDigVehID;
+			pin.KFactorOpt = true;
+
 			PLAWDT(pin, pout);
+
 			EZSPACE.WT = pout.ConfigWeight * LBS*1000.0;
+			EZSPACE.AREA = pout.ConfigArea / pow(0.3048, 2);
+			EZSPACE.K = pout.KFactor;
 
 			int csi_out;
 			if (sv.RBI == BODY_EARTH)
@@ -21946,7 +21955,11 @@ int RTCC::PMMXFR(int id, void *data)
 		in.TrimAngleInd = med_m86.TrimAngleIndicator;
 
 		//Determine time
-		PMMLDP(in, man);
+		if (PMMLDP(in, man))
+		{
+			PMXSPT("PMMLDP", 303);
+			return 1;
+		}
 
 		//Check ground rules
 		err = PMMXFRGroundRules(mpt, man.GMTI, med_m86.ReplaceCode, LastManReplaceFlag, LowerLimit, UpperLimit, CurMan, VectorFetchTime);
@@ -22857,70 +22870,27 @@ void RTCC::PMDDMT(int MPT_ID, unsigned ManNo, int REFSMMAT_ID, bool HeadsUp, Det
 				res.PHASE_DOT = theta_dot * DEG;
 				res.WEDGE_ANG = delta * DEG;
 
-				EphemerisData sv_dh;
-				CELEMENTS elem_a, elem_m;
-				double h1, h2, i1, i2, u1, u2, gamma, Cg, Tg, alpha1, alpha2, beta, theta_R, n, dt, t_R;
-				int i = 0;
-				dt = 1.0;
-				t_R = man->GMT_BO;
+				//Convert state vectors to Keplerian elements
+				EphemerisData sv_m;
+				AEGBlock aeg_m, aeg_a;
 
-				sv_dh.RBI = man->RefBodyInd;
+				sv_m.R = R_m;
+				sv_m.V = V_m;
+				sv_m.GMT = man->GMT_BO;
+				sv_m.RBI = man->RefBodyInd;
+				aeg_m = SVToAEG(sv_m, 0.0, 1.0, 0.0);
+				aeg_a = SVToAEG(sv_other, 0.0, 1.0, 0.0);
 
-				while (i<10 && abs(dt)>0.01)
+				//Initialize maneuvering vehicle
+				PMMAEGS(aeg_m.Header, aeg_m.Data, aeg_m.Data);
+				//Take other vehicle to phase match
+				aeg_a.Data.TIMA = 6;
+				PMMAEGS(aeg_m.Header, aeg_a.Data, aeg_a.Data);
+				if (aeg_m.Header.ErrorInd == 0)
 				{
-					elem_a = OrbMech::GIMIKC(R_a, V_a, mu);
-					elem_m = OrbMech::GIMIKC(R_m, V_m, mu);
-
-					h1 = elem_m.h;
-					h2 = elem_a.h;
-					i1 = elem_m.i;
-					i2 = elem_a.i;
-					u1 = OrbMech::MeanToTrueAnomaly(elem_m.l, elem_m.e) + elem_m.g;
-					if (u1 > PI2)
-					{
-						u1 -= PI2;
-					}
-					u2 = OrbMech::MeanToTrueAnomaly(elem_a.l, elem_a.e) + elem_a.g;
-					if (u2 > PI2)
-					{
-						u2 -= PI2;
-					}
-
-					gamma = (h2 - h1) / 2.0;
-					Cg = cos(gamma);
-					Tg = sin(gamma) / Cg;
-					alpha2 = (i2 + i1) / 2.0;
-					alpha1 = alpha2 - i1;
-					beta = 2.0*atan(cos(alpha2) / cos(alpha1)*Tg);
-					theta_R = u1 - u2 + beta;
-					if (theta_R > PI)
-					{
-						theta_R -= PI2;
-					}
-					if (theta_R < -PI)
-					{
-						theta_R += PI2;
-					}
-					if (i == 0)
-					{
-						res.PHASE = theta_R * DEG;
-					}
-
-					n = OrbMech::GetMeanMotion(R_a, V_a, mu);
-					dt = theta_R / n;
-
-					sv_dh.R = R_a;
-					sv_dh.V = V_a;
-					sv_dh.GMT = t_R;
-
-					sv_dh = coast(sv_dh, dt);
-					R_a = sv_dh.R;
-					V_a = sv_dh.V;
-					t_R = sv_dh.GMT;
-
-					i++;
+					res.PHASE = aeg_a.Data.Item10*DEG;
+					res.DH = aeg_a.Data.Item8 / 1852.0;
 				}
-				res.DH = (length(R_a) - length(R_m)) / 1852.0;
 			}
 		}
 	}
@@ -27928,13 +27898,13 @@ int RTCC::PMQAFMED(std::string med, std::vector<std::string> data)
 		{
 			return 1;
 		}
-		if (column < 0 || column>4)
+		if (column < 0 || column > 6)
 		{
 			return 1;
 		}
 		if (column == 0)
 		{
-			for (int i = 0;i < 4;i++)
+			for (int i = 0;i < 6;i++)
 			{
 				PZMCCDIS.data[i].Mode = 0;
 			}

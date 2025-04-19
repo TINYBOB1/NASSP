@@ -1625,11 +1625,15 @@ bool LEM::clbkVCRedrawEvent(int id, int event, SURFHANDLE surf)
 			if (dsky.StbyLit())       { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_STBY); }
 			if (dsky.KbRelLit())      { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_KEY_REL); }
 			if (dsky.OprErrLit())     { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_OPR_ERR); }
+			if (dsky.PrioDispLit())   { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_PRIO_DISP); }
+			if (dsky.NoDAPLit())	  { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_NO_DAP); }
 			if (dsky.TempLit())       { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_TEMP); }
 			if (dsky.GimbalLockLit()) { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_GIMBAL_LOCK); }
 			if (dsky.ProgLit())       { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_PROG); }
 			if (dsky.RestartLit())    { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_RESTART); }
 			if (dsky.TrackerLit())    { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_TRACKER); }
+			if (dsky.AltLit())        { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_ALT); }
+			if (dsky.VelLit())        { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_VEL); }
 		}
 
 //		sprintf(oapiDebugString(), "Integral Voltage = %lf", lca.GetNumericVoltage());
@@ -3608,9 +3612,11 @@ void LEM::MoveFlashlight()
 	if (flashlightOn) { //Only move the light emmitter if the flashlight is on
 		//Huge thanks the Jordan64 for helping get the direction stuff working! :)
 
-		VECTOR3 flashlightDirGlobal, vesselPosGlobal;
+		VECTOR3 flashlightPosGlobal, flashlightDirGlobal, vesselPosGlobal;
 
-		GetCameraOffset(flashlightPos);
+		oapiCameraGlobalPos(&flashlightPosGlobal);
+		Global2Local(flashlightPosGlobal, flashlightPos);
+
 		oapiCameraGlobalDir(&flashlightDirGlobal);
 		GetGlobalPos(vesselPosGlobal);
 		Global2Local(vesselPosGlobal + flashlightDirGlobal, flashlightDirLocal);

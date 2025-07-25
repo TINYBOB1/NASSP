@@ -3734,6 +3734,8 @@ protected:
 	// Electric Lights
 	ElectricLight* SpotLight;
 	ElectricLight* RndzLight;
+	ElectricLight* EVALight;
+	ElectricLight* RunLight;
 
 	// O2 Tanks
 	h_Tank *O2Tanks[2];

@@ -144,6 +144,9 @@ void Saturn::SystemsInit() {
 
 	SpotLight = (ElectricLight *)Panelsdk.GetPointerByString("ELECTRIC:SPOTLIGHT");
 	RndzLight = (ElectricLight *)Panelsdk.GetPointerByString("ELECTRIC:RNDZLIGHT");
+	EVALight = (ElectricLight*)Panelsdk.GetPointerByString("ELECTRIC:EVALIGHT");
+	RunLight = (ElectricLight*)Panelsdk.GetPointerByString("ELECTRIC:RUNLIGHT");
+
 
 	//
 	// EPS/Cryo devices
@@ -2931,6 +2934,9 @@ void Saturn::CheckSMSystemsState()
 		// Disconnect Exterior SM lights
 		RndzLight->WireTo(NULL);
 		SpotLight->WireTo(NULL);
+		EVALight->WireTo(NULL);
+		RunLight->WireTo(NULL);
+
 	}
 }
 

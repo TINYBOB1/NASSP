@@ -5264,6 +5264,8 @@ void Saturn::UpdateMassAndCoG()
 		//lights
 		SpotLight->UpdatePosition(CoGShift);
 		RndzLight->UpdatePosition(CoGShift);
+		EVALight->UpdatePosition(CoGShift);
+		RunLight->UpdatePosition(CoGShift);
 
 		// All done!
 		LastFuelWeight = CurrentFuelWeight;

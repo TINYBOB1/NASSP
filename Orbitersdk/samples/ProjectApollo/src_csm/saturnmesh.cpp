@@ -92,6 +92,8 @@ MESHHANDLE hcmseatsfolded;
 MESHHANDLE hcmseatsunfolded;
 MESHHANDLE hcmCOAScdr;
 MESHHANDLE hcmCOAScdrreticle;
+MESHHANDLE hcmCueCardsArrows;
+MESHHANDLE hcmPointingArrow;
 
 #define LOAD_MESH(var, name) var = oapiLoadMeshGlobal(name);
 
@@ -106,7 +108,7 @@ PARTICLESTREAMSPEC o2_venting_spec = {
 	0.2,	// growthrate
 	0.5,    // atmslowdown 
 	PARTICLESTREAMSPEC::DIFFUSE,
-	PARTICLESTREAMSPEC::LVL_FLAT, 1.0, 1.0,
+	PARTICLESTREAMSPEC::LVL_LIN, 1.0, 1.0,
 	PARTICLESTREAMSPEC::ATM_FLAT, 1.0, 1.0
 };
 
@@ -148,7 +150,7 @@ PARTICLESTREAMSPEC wastewaterdump_spec = {
 	0.001,	// growthrate
 	0,      // atmslowdown 
 	PARTICLESTREAMSPEC::DIFFUSE,
-	PARTICLESTREAMSPEC::LVL_FLAT, 1.0, 1.0,
+	PARTICLESTREAMSPEC::LVL_LIN, 1.0, 1.0,
 	PARTICLESTREAMSPEC::ATM_FLAT, 1.0, 1.0
 };
 
@@ -162,7 +164,7 @@ PARTICLESTREAMSPEC urinedump_spec = {
 	0.001,	// growthrate
 	0,		// atmslowdown 
 	PARTICLESTREAMSPEC::DIFFUSE,
-	PARTICLESTREAMSPEC::LVL_FLAT, 1.0, 1.0,
+	PARTICLESTREAMSPEC::LVL_LIN, 1.0, 1.0,
 	PARTICLESTREAMSPEC::ATM_FLAT, 1.0, 1.0
 };
 
@@ -664,6 +666,8 @@ void SaturnInitMeshes()
 	LOAD_MESH(hcmseatsunfolded, "ProjectApollo/CM-VC-SeatsUnfolded");
 	LOAD_MESH(hcmCOAScdr, "ProjectApollo/CM-COAS-CDR");
 	LOAD_MESH(hcmCOAScdrreticle, "ProjectApollo/CM-COAS-CDR_Reticle");
+	LOAD_MESH(hcmCueCardsArrows, "ProjectApollo/Helpers/CM-CueCardsArrows");
+	LOAD_MESH(hcmPointingArrow, "ProjectApollo/Helpers/PointingArrow");
 
 	SURFHANDLE contrail_tex = oapiRegisterParticleTexture("Contrail2");
 	lem_exhaust.tex = contrail_tex;
@@ -1037,8 +1041,8 @@ void Saturn::SetCSMStage (VECTOR3 cg_ofs)
 		VECTOR3 mesh_dir_tower = mesh_dir + _V(0, 0, TowerOffset);
 		TowerOffset += 2.1; //Additional offset for CSM stage
 
-		meshidx = AddMesh(hsat5tower, &mesh_dir_tower);
-		SetMeshVisibilityMode(meshidx, MESHVIS_VCEXTERNAL);
+		LESMeshidx = AddMesh(hsat5tower, &mesh_dir_tower);
+		SetMeshVisibilityMode(LESMeshidx, MESHVIS_VCEXTERNAL);
 	}
 
 	// And the Crew
@@ -1065,6 +1069,9 @@ void Saturn::SetCSMStage (VECTOR3 cg_ofs)
 	fwdhatchidx = AddMesh(hFHF, &mesh_dir);
 	SetFwdHatchMesh();
 
+	// Pointing Arrow
+	hcmPointingArrowidx = AddMesh(hcmPointingArrow, &mesh_dir);
+
 	// VC
 	UpdateVC(mesh_dir);
 	seatsfoldedidx = AddMesh(hcmseatsfolded, &mesh_dir);
@@ -1073,6 +1080,10 @@ void Saturn::SetCSMStage (VECTOR3 cg_ofs)
 	coascdrreticleidx = AddMesh(hcmCOAScdrreticle, &mesh_dir);
 	coascdridx = AddMesh(hcmCOAScdr, &mesh_dir);
 	SetCOASMesh();
+
+	//Cue Cards Arrows
+	cmvccuecardsarrowsidx = AddMesh(hcmCueCardsArrows, &mesh_dir);
+	SetVCCueCardsArrows();
 
 	//Interior
 	meshidx = AddMesh(hCMInt, &mesh_dir);
@@ -1184,10 +1195,8 @@ void Saturn::CreateSIVBStage(char *config, VESSELSTATUS &vs1, bool SaturnVStage)
 	S4Config.LMDescentFuelMassKg = LMDescentFuelMassKg;
 	S4Config.LMAscentEmptyMassKg = LMAscentEmptyMassKg;
 	S4Config.LMDescentEmptyMassKg = LMDescentEmptyMassKg;
-	S4Config.LMPad = LMPad;
-	S4Config.LMPadCount = LMPadCount;
-	S4Config.AEAPad = AEAPad;
-	S4Config.AEAPadCount = AEAPadCount;
+	S4Config.LMPad = &LMPad;
+	S4Config.AEAPad = &AEAPad;
 	sprintf(S4Config.LEMCheck, LEMCheck);
 
 	S4Config.iu_pointer = iu;
@@ -1197,6 +1206,8 @@ void Saturn::CreateSIVBStage(char *config, VESSELSTATUS &vs1, bool SaturnVStage)
 	SIVB *SIVBVessel = static_cast<SIVB *> (oapiGetVesselInterface(hs4bM));
 	SIVBVessel->SetState(S4Config);
 
+	LMPad.clear();
+	AEAPad.clear();
 	PayloadDataTransfer = true;
 
 }
@@ -1340,6 +1351,15 @@ void Saturn::SetVCSeatsMesh() {
 	} else {
 		SetMeshVisibilityMode(seatsfoldedidx, MESHVIS_NEVER);
 		SetMeshVisibilityMode(seatsunfoldedidx, MESHVIS_VC);
+	}
+}
+
+void Saturn::SetVCCueCardsArrows() {
+//	if (checkControl.getFlashing() || ViewCueCardArrows) {
+	if (ViewCueCardArrows) {
+		SetMeshVisibilityMode(cmvccuecardsarrowsidx, MESHVIS_VC);
+	} else {
+		SetMeshVisibilityMode(cmvccuecardsarrowsidx, MESHVIS_NEVER);
 	}
 }
 
@@ -1549,8 +1569,8 @@ void Saturn::SetReentryMeshes() {
 		TowerOffset = 4.95;
 		VECTOR3 mesh_dir_tower = mesh_dir + _V(0, 0, TowerOffset);
 
-		meshidx = AddMesh (hsat5tower, &mesh_dir_tower);
-		SetMeshVisibilityMode (meshidx, MESHVIS_VCEXTERNAL);
+		LESMeshidx = AddMesh (hsat5tower, &mesh_dir_tower);
+		SetMeshVisibilityMode (LESMeshidx, MESHVIS_VCEXTERNAL);
 	}
 
 	// And the Crew
@@ -1585,6 +1605,9 @@ void Saturn::SetReentryMeshes() {
 	meshidx = AddMesh (hCMInt, &mesh_dir);
 	SetMeshVisibilityMode (meshidx, MESHVIS_EXTERNAL);
 
+	// Pointing Arrow
+	hcmPointingArrowidx = AddMesh(hcmPointingArrow, &mesh_dir);
+
 	// VC
 	UpdateVC(mesh_dir);
 	seatsfoldedidx = AddMesh(hcmseatsfolded, &mesh_dir);
@@ -1593,6 +1616,10 @@ void Saturn::SetReentryMeshes() {
 	coascdrreticleidx = AddMesh(hcmCOAScdrreticle, &mesh_dir);
 	coascdridx = AddMesh(hcmCOAScdr, &mesh_dir);
 	SetCOASMesh();
+
+	//Cue Cards Arrows
+	cmvccuecardsarrowsidx = AddMesh(hcmCueCardsArrows, &mesh_dir);
+	SetVCCueCardsArrows();
 
 	//Add CM meshes. More to be added here...
 	AddCMMeshes(mesh_dir);
@@ -1869,6 +1896,9 @@ void Saturn::SetRecovery()
 	meshidx = AddMesh (hCMInt, &mesh_dir);
 	SetMeshVisibilityMode (meshidx, MESHVIS_EXTERNAL);
 
+	// Pointing Arrow
+	hcmPointingArrowidx = AddMesh(hcmPointingArrow, &mesh_dir);
+
 	// VC
 	UpdateVC(mesh_dir);
 	seatsfoldedidx = AddMesh(hcmseatsfolded, &mesh_dir);
@@ -1877,6 +1907,10 @@ void Saturn::SetRecovery()
 	coascdrreticleidx = AddMesh(hcmCOAScdrreticle, &mesh_dir);
 	coascdridx = AddMesh(hcmCOAScdr, &mesh_dir);
 	SetCOASMesh();
+
+	//Cue Cards Arrows
+	cmvccuecardsarrowsidx = AddMesh(hcmCueCardsArrows, &mesh_dir);
+	SetVCCueCardsArrows();
 
 	if (Crewed) {
 		//old values 2.7,1.8,-1.5

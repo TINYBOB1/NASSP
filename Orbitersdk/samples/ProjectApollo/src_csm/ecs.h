@@ -249,6 +249,7 @@ public:
 	void LoadState(char *line);
 	void SaveState(FILEHANDLE scn);
 	void DefineAnimationsVC(UINT idx);
+	double GetAnimState();
 
 protected:
 	bool open;
@@ -282,16 +283,18 @@ public:
 	SaturnWaterController();
 	virtual ~SaturnWaterController();
 
-	void Init(Saturn *s, h_Tank *pt, h_Tank *wt, h_Tank *pit, h_Tank *wit, 
-		      h_Pipe *wvp, h_Pipe *wivp);
+	void Init(Saturn *s, h_Tank *pt, h_Tank *wt, h_Tank *pit, h_Tank *wit,
+		h_Pipe *wvp, h_Pipe *wivp, h_Tank *ucdt, h_Pipe *odp, h_Pipe *hdp);
 	void SystemTimestep(double simdt);
 	double *GetWasteWaterDumpLevelRef() { return &wasteWaterDumpLevel; }
 	double *GetUrineDumpLevelRef() { return &urineDumpLevel; }
+	double GetCMUCDPct() { return ((UCDTank->space.GetMass() / (UCDTank->space.Volume * 1000.0)) * 100.0); }
 	void FoodPreparationWaterSwitchToggled(PanelSwitchItem *s);
 
 protected:
 	double wasteWaterDumpLevel;
 	double urineDumpLevel;
+	double hatchUrineDumpLevel;
 
 	Saturn *saturn;
 	h_Tank *potableTank;
@@ -300,6 +303,9 @@ protected:
 	h_Tank *wasteInletTank;
 	h_Pipe *wasteVentPipe;
 	h_Pipe *wasteInletVentPipe;
+	h_Tank *UCDTank;
+	h_Pipe *OVBDDumpPipe;
+	h_Pipe *hatchDumpPipe;
 };
 
 ///

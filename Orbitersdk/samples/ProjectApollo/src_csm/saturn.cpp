@@ -614,16 +614,6 @@ Saturn::~Saturn()
 		sivb = 0;
 	}
 
-	if (LMPad) {
-		delete[] LMPad;
-		LMPad = 0;
-	}
-
-	if (AEAPad) {
-		delete[] AEAPad;
-		AEAPad = 0;
-	}
-
 	ClearMissionManagementMemory();
 
 	// Release DirectX joystick stuff
@@ -644,6 +634,8 @@ Saturn::~Saturn()
 			delete[] ReticleLine[i][k];
 	}
 	delete[] ReticlePoint;
+
+	if (wasteDisposalKnob) delete wasteDisposalKnob;
 
 	//fclose(PanelsdkLogFile);
 }
@@ -761,19 +753,6 @@ void Saturn::initSaturn()
 	ApolloExploded = false;
 	CryoStir = false;
 	KranzPlayed = false;
-
-	//
-	// LM PAD data.
-	//
-
-	LMPadCount = 0;
-	LMPad = 0;
-	LMPadLoadCount = 0;
-	LMPadValueCount = 0;
-	AEAPadCount = 0;
-	AEAPad = 0;
-	AEAPadLoadCount = 0;
-	AEAPadValueCount = 0;
 
 	//
 	// Default mission time to an hour prior to launch.
@@ -1167,6 +1146,9 @@ void Saturn::initSaturn()
 	seatsunfoldedidx = -1;
 	coascdridx = -1;
 	coascdrreticleidx = -1;
+	cmvccuecardsarrowsidx = -1;
+	hcmPointingArrowidx = -1;
+	LESMeshidx = -1;
 
 	vcmesh = NULL;
 	vis = NULL;
@@ -1215,6 +1197,7 @@ void Saturn::initSaturn()
 	VCSeatsfolded = false;
 
 	COASreticlevisible = false;
+	ViewCueCardArrows = false;
 
 	CurrentFuelWeight = 0;
 	LastFuelWeight = numeric_limits<double>::infinity(); // Ensure update at first opportunity
@@ -1229,13 +1212,15 @@ void Saturn::initSaturn()
 	wasteDisposalState.Set(AnimState::CLOSING, 0.0);
 	panel382CoverState.Set(AnimState::CLOSING, 0.0);
 	altimeterCoverState.Set(AnimState::OPENING, 1.0);
-	ordealState.Set(AnimState::CLOSING, 0.0);	//In reality the ORDEAL should be stowed for launch
+	ordealState.Set(AnimState::OPENING, 1.0);
 	DSKY_GlareshadeState.Set(AnimState::OPENING, 1.0);
 	EMSDV_GlareshadeState.Set(AnimState::OPENING, 1.0);
 	AccelerometerCoverState.Set(AnimState::OPENING, 1.0);
 	MissionTimer_GlareshadeState.Set(AnimState::OPENING, 1.0);
 	Sextant_EyepieceState.Set(AnimState::OPENING, 1.0);
 	Telescope_EyepieceState.Set(AnimState::OPENING, 1.0);
+
+	wasteDisposalKnob = NULL;
 
 	// call only once 
 	if (!InitSaturnCalled) {
@@ -1558,7 +1543,7 @@ void Saturn::SetAnimations(double simdt)
 	DoMeshAnimation(panel382CoverState, panel382CoverAnim, 0.5, simdt);
 	DoMeshAnimation(altimeterCoverState, altimeterCoverAnim, 2.0, simdt);
 	DoMeshAnimation(wasteDisposalState, wasteDisposalAnim, 1.0, simdt);
-	DoMeshAnimation(ordealState, ordealAnim, 3.0, simdt);
+	DoMeshAnimation(ordealState, ordealMeshAnim, 3.0, simdt);
 	DoMeshAnimation(DSKY_GlareshadeState, DSKY_GlareshadeAnim, 2.0, simdt);
 	DoMeshAnimation(EMSDV_GlareshadeState, EMSDV_GlareshadeAnim, 2.0, simdt);
 	DoMeshAnimation(AccelerometerCoverState, AccelerometerCoverAnim, 2.0, simdt);
@@ -1577,6 +1562,9 @@ void Saturn::clbkPreStep(double simt, double simdt, double mjd)
 	TRACE(buffer);
 
 	SetAnimations(simdt);
+	CheckBPC_SideHatchCover();
+//	UpdatePointingArrow();
+//	InitFDAICustomCamera();
 
 	//
 	// We die horribly if you set 100x or higher acceleration during launch.
@@ -1638,7 +1626,6 @@ void Saturn::clbkPreStep(double simt, double simdt, double mjd)
 	if ((oapiGetFocusObject() == GetHandle()) && (oapiCockpitMode() == COCKPIT_VIRTUAL) && (oapiCameraMode() == CAM_COCKPIT)) {
 		//We have focus on this vessel, and are in the VC
 		MoveFlashlight();
-		UpdateFloodLights();
 	}
 
 	sprintf(buffer, "End time(0) %lld", time(0)); 
@@ -1804,19 +1791,17 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 	papiWriteScenario_double (scn, "CMMASS", CM_EmptyMass);
 
 	if (!PayloadDataTransfer) {
-		if (LMPadCount > 0) {
-			oapiWriteScenario_int (scn, "LMPADCNT", LMPadCount);
-			for (i = 0; i < LMPadCount; i++) {
+		if (LMPad.size() > 0) {
+			for (unsigned i = 0; i < LMPad.size() / 2; i++) {
 				sprintf(str, "%04o %05o", LMPad[i * 2], LMPad[i * 2 + 1]);
-				oapiWriteScenario_string (scn, "LMPAD", str);
+				oapiWriteScenario_string(scn, "LMPAD", str);
 			}
 		}
 	}
 
 	if (!PayloadDataTransfer) {
-		if (AEAPadCount > 0) {
-			oapiWriteScenario_int(scn, "AEAPADCNT", AEAPadCount);
-			for (i = 0; i < AEAPadCount; i++) {
+		if (AEAPad.size() > 0) {
+			for (unsigned i = 0; i < AEAPad.size() / 2; i++) {
 				sprintf(str, "%04o %06o", AEAPad[i * 2], AEAPad[i * 2 + 1]);
 				oapiWriteScenario_string(scn, "AEAPAD", str);
 			}
@@ -2354,38 +2339,22 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 		SetCrewEquipmentState(SwitchState);
 	}
 	else if (!strnicmp (line, "LMPADCNT", 8)) {
-		if (!LMPad) {
-			sscanf (line+8, "%d", &LMPadCount);
-			if (LMPadCount > 0) {
-				LMPad = new unsigned int[LMPadCount * 2];
-			}
-		}
+		//For backwards compatibilty to not overload LMPAD
 	}
 	else if (!strnicmp (line, "LMPAD", 5)) {
 		unsigned int addr, val;
 		sscanf (line+5, "%o %o", &addr, &val);
-		LMPadValueCount++;
-		if (LMPad && LMPadLoadCount < (LMPadCount * 2)) {
-			LMPad[LMPadLoadCount++] = addr;
-			LMPad[LMPadLoadCount++] = val;
-		}
+		LMPad.push_back(addr);
+		LMPad.push_back(val);
 	}
 	else if (!strnicmp(line, "AEAPADCNT", 9)) {
-		if (!AEAPad) {
-			sscanf(line + 9, "%d", &AEAPadCount);
-			if (AEAPadCount > 0) {
-				AEAPad = new unsigned int[AEAPadCount * 2];
-			}
-		}
+		//For backwards compatibilty to not overload AEAPAD
 	}
 	else if (!strnicmp(line, "AEAPAD", 6)) {
 		unsigned int addr, val;
 		sscanf(line + 6, "%o %o", &addr, &val);
-		AEAPadValueCount++;
-		if (AEAPad && AEAPadLoadCount < (AEAPadCount * 2)) {
-			AEAPad[AEAPadLoadCount++] = addr;
-			AEAPad[AEAPadLoadCount++] = val;
-		}
+		AEAPad.push_back(addr);
+		AEAPad.push_back(val);
 	}
 	else if (!strnicmp (line, "CMPAD", 5)) {
 		unsigned int addr, val;
@@ -3713,6 +3682,25 @@ int Saturn::clbkConsumeBufferedKey(DWORD key, bool down, char *kstate) {
 
 	if (enableVESIM) vesim.clbkConsumeBufferedKey(key, down, kstate);
 
+	// Help key for CueCard Arrows
+	if (KEYMOD_LCONTROL(kstate)) {
+		if (down) {
+			switch (key) {
+			case OAPI_KEY_H:
+				if (InVC && oapiCameraInternal())
+				{
+					if (ViewCueCardArrows == true) {
+						ViewCueCardArrows = false;
+					}
+					else {
+						ViewCueCardArrows = true;
+					}
+					return 1;
+				}
+			}
+		}
+	}
+
 	if (KEYMOD_SHIFT(kstate) && !KEYMOD_CONTROL(kstate) && !KEYMOD_ALT(kstate)){
 		// Do DSKY stuff
 		DSKYPushSwitch* dskyKeyChanged = nullptr;
@@ -3849,6 +3837,22 @@ int Saturn::clbkConsumeBufferedKey(DWORD key, bool down, char *kstate) {
 					bRecovery = true;
 				}
 				return 1;
+			case OAPI_KEY_O:
+				if (ordealState.Closed()) {
+					ORDEALSlewSwitch.SwitchTo(THREEPOSSWITCH_UP, true);
+				}
+				return 1;
+			case OAPI_KEY_L:
+				if (ordealState.Closed()) {
+					ORDEALSlewSwitch.SwitchTo(THREEPOSSWITCH_DOWN, true);
+				}
+				return 1;
+			}
+		} else {
+			switch (key) {
+			case OAPI_KEY_O:
+			case OAPI_KEY_L:
+				ORDEALSlewSwitch.SwitchTo(THREEPOSSWITCH_CENTER, true);
 			}
 		}
 		return 0;

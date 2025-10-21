@@ -32,6 +32,7 @@ class LEM;
 class Crawler;
 class MCC;
 class SIVB;
+class Skylab;
 
 #ifndef OAPI_MSGTYPE
 typedef int OAPI_MSGTYPE;
@@ -77,11 +78,13 @@ public:
 	void menuSetMainPage();
 	void menuSetGNCPage();
 	void menuSetECSPage();
+	void menuSetECSDebugPage();
 	void menuSetIUPage();
 	void menuSetTELEPage();
 	void menuSetLGCPage();
 	void menuSetDebugPage();
 	void menuSetFailuresPage();
+	void menuSetSLPage();
 
 	void menuKillRot();
 	void menuSaveEMSScroll();
@@ -92,6 +95,7 @@ public:
 	void menuSetLMPInSuit();
 	void menuStartEVA();
 	void menuConnectCSMO2Hose();
+	void menuJettisonEquipment();
 	void menuSetPrimECSTestHeaterPower();
 	void menuSetSecECSTestHeaterPower();
 	void menuAbortUplink();
@@ -104,7 +108,7 @@ public:
 	void menuSetSVSlot();
 	void menuClearDebugLine();
 	void menuFreezeDebugLine();
-	void menuSetIUSource();
+	void menuSetUplinkVessel();
 	void menuCycleIUUplinkType();
 	void menuSetIUUplinkInp1();
 	void menuSetIUUplinkInp2();
@@ -117,6 +121,10 @@ public:
 	void menuSetRandomFailures();
 	void menuClearAllFailures();
 	void menuAEAACommands();
+
+	void menuSLUplinkType();
+	void menuSLUplinkOption();
+	void menuSendSLUplink();
 
 	OBJHANDLE AGCGravityRef(VESSEL *vessel) const;
 
@@ -140,6 +148,7 @@ protected:
 	LEM *lem;
 	SIVB *sivb;
 	MCC *mcc;
+	Skylab *sl;
 	int screen;
 	bool debug_frozen;
 	bool isSaturnV;
